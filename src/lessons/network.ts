@@ -30,7 +30,9 @@ export interface Lesson {
   intro: Text;
   steps: Step[];
   /** Rename diagram nodes for this lesson (e.g. the "server" node as an NTP server). */
-  labels?: Partial<Record<NodeId, { label: Text; addr?: string }>>;
+  labels?: Partial<Record<NodeId, { label: Text; addr?: string; icon?: 'database' }>>;
+  /** Extra diagram links this lesson needs, e.g. 'server-dns'. */
+  links?: string[];
 }
 
 export const ON_LAPTOP = 'Captured on the laptop\'s network link';

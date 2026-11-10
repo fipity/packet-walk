@@ -15,7 +15,7 @@ function* allSteps() {
 function verify(p: Packet) {
   const b = p.bytes;
   let ipStart = -1;
-  if (p.layers[0].kind === 'wifi') return; // 802.11 frames are checked separately
+  if (p.layers[0].kind === 'wifi' || p.layers[0].kind === 'phy') return; // checked separately
   if (p.layers[0].kind === 'eth') {
     const type = u16(b, 12);
     if (type === 0x0806) {
@@ -327,5 +327,81 @@ describe('lesson groups', () => {
     const ids = GROUPS.flatMap((g) => g.ids);
     expect(new Set(ids).size).toBe(ids.length);
     expect([...ids].sort()).toEqual(LESSONS.map((l) => l.id).sort());
+  });
+});
+
+describe('physical layer, SSH tunneling, RADIUS and DNSSEC', async () => {
+  const { crc32, md5, hmacMd5, sha256 } = await import('../src/crypto');
+  const { keyTag } = await import('../src/protocols/security');
+  const lesson = (id: string) => LESSONS.find((l) => l.id === id)!;
+  const SECRET = new TextEncoder().encode('s3cr3t-shared');
+  const cat = (...a: ArrayLike<number>[]) => Uint8Array.from(a.flatMap((x) => Array.from(x)));
+
+  it('sends a valid FCS on a good frame and a mismatching one on the damaged frame', () => {
+    const [good, bad] = lesson('physical').steps.map((s) => s.packet.bytes);
+    expect(Array.from(good.subarray(0, 8))).toEqual([0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0xd5]);
+    const fcs = (b: Uint8Array) => new DataView(b.buffer, b.byteOffset).getUint32(b.length - 4, true);
+    expect(good.length).toBe(8 + 60 + 4);
+    expect(crc32(good.subarray(8, good.length - 4))).toBe(fcs(good));
+    expect(crc32(bad.subarray(8, bad.length - 4))).not.toBe(fcs(bad));
+    expect(fcs(bad)).toBe(fcs(good));
+  });
+
+  it('routes tunnel traffic over the private link and keeps the loopback packet off Ethernet', () => {
+    const l = lesson('ssh-tunnel');
+    expect(l.links).toContain('server-dns');
+    expect(l.steps[0].packet.layers[0].kind).toBe('ip');
+    const pg = l.steps[5].packet.layers.find((x) => x.kind === 'pg')!;
+    expect(new DataView(l.steps[5].packet.bytes.buffer).getUint32(pg.offset)).toBe(pg.length);
+  });
+
+  it('computes RADIUS authenticators and Message-Authenticators with the shared secret', () => {
+    const steps = lesson('radius').steps;
+    const rad = (i: number) => {
+      const p = steps[i].packet;
+      const l = p.layers.find((x) => x.kind === 'radius')!;
+      return p.bytes.slice(l.offset, l.offset + l.length);
+    };
+    for (const [reqI, respI] of [[0, 1], [2, 3]]) {
+      const req = rad(reqI);
+      const resp = rad(respI);
+      const ra = req.subarray(4, 20);
+      const expected = md5(cat(resp.subarray(0, 4), ra, resp.subarray(20), SECRET));
+      expect(Array.from(resp.subarray(4, 20))).toEqual(Array.from(expected));
+      // Message-Authenticator in the request: HMAC-MD5 with the attribute zeroed.
+      const at = req.length - 16;
+      const zeroed = req.slice();
+      zeroed.fill(0, at);
+      expect(Array.from(req.subarray(at))).toEqual(Array.from(hmacMd5(SECRET, zeroed)));
+    }
+    // The hidden password un-hides to the original.
+    const req = rad(2);
+    let o = 20;
+    while (req[o] !== 2) o += req[o + 1];
+    const hidden = req.subarray(o + 2, o + req[o + 1]);
+    const b = md5(cat(SECRET, req.subarray(4, 20)));
+    const plain = String.fromCharCode(...Array.from(hidden.subarray(0, 16), (x, i) => x ^ b[i])).replace(/\0+$/, '');
+    expect(plain).toBe('correct horse');
+    // Accounting request authenticator.
+    const acct = rad(4);
+    expect(Array.from(acct.subarray(4, 20))).toEqual(Array.from(md5(cat(acct.subarray(0, 4), new Array(16).fill(0), acct.subarray(20), SECRET))));
+  });
+
+  it('links DS digest and key tags to the published DNSKEY', () => {
+    const steps = lesson('dnssec').steps;
+    const fields = (i: number) => steps[i].packet.fields;
+    const val = (i: number, name: string) => fields(i).filter((f) => f.name === name);
+    // Rebuild the KSK RDATA from the DNSKEY response.
+    const p = steps[4].packet;
+    const flags = val(4, 'DNSKEY: Flags');
+    const kskIdx = flags.findIndex((f) => f.value.startsWith('257'));
+    const start = flags[kskIdx].offset;
+    const rdata = Array.from(p.bytes.subarray(start, start + 4 + 32));
+    const dsP = steps[6].packet;
+    const dsTag = val(6, 'DS: Key tag')[0];
+    const digest = val(6, 'DS: Digest')[0];
+    expect((dsP.bytes[dsTag.offset] << 8) | dsP.bytes[dsTag.offset + 1]).toBe(keyTag(rdata));
+    const owner = [7, ...new TextEncoder().encode('example'), 3, ...new TextEncoder().encode('com'), 0];
+    expect(Array.from(dsP.bytes.subarray(digest.offset, digest.offset + 32))).toEqual(Array.from(sha256(cat(owner, rdata))));
   });
 });

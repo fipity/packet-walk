@@ -24,6 +24,9 @@ const LINKS: [NodeId, NodeId][] = [
   ['internet', 'server'],
 ];
 
+/** Links that only exist in some lessons (e.g. a private network behind a server). */
+const OPTIONAL_LINKS: [NodeId, NodeId][] = [['server', 'dns']];
+
 const LABEL: Record<NodeId, Key> = {
   laptop: 'nodeLaptop',
   router: 'nodeRouter',
@@ -53,12 +56,17 @@ const ICON: Record<NodeId, string> = {
     '<rect x="-23" y="-26" width="46" height="15" rx="3" class="ico"/><rect x="-23" y="-7" width="46" height="15" rx="3" class="ico"/><rect x="-23" y="12" width="46" height="15" rx="3" class="ico"/><circle cx="14" cy="-18.5" r="2.3" class="led"/><circle cx="14" cy="0.5" r="2.3" class="led"/><circle cx="14" cy="19.5" r="2.3" class="led"/>',
 };
 
+const ALT_ICON = {
+  database:
+    '<ellipse cx="0" cy="-18" rx="22" ry="7" class="ico"/><path d="M-22 -18 v34 a22 7 0 0 0 44 0 v-34" class="ico"/><path d="M-22 -6 a22 7 0 0 0 44 0 M-22 6 a22 7 0 0 0 44 0" class="ico-line" fill="none"/>',
+};
+
 // ---------------------------------------------------------------- layer chips
 
 const SHORT: Partial<Record<LayerKind, string>> = {
   eth: 'ETH', wifi: '802.11', arp: 'ARP', dhcp: 'DHCP', udp: 'UDP', tcp: 'TCP', dns: 'DNS', http: 'HTTP',
   ws: 'WS', quic: 'QUIC', ssh: 'SSH', ftp: 'FTP', bgp: 'BGP', ntp: 'NTP', smtp: 'SMTP', imap: 'IMAP',
-  pop3: 'POP3', wg: 'WG', eapol: 'EAPOL',
+  pop3: 'POP3', wg: 'WG', eapol: 'EAPOL', phy: 'PHY', radius: 'RADIUS', pg: 'PGSQL',
 };
 
 export function shortName(l: Layer): string {
@@ -88,13 +96,13 @@ export function chain(p: Packet): Chip[] {
 
 // ---------------------------------------------------------------- routing
 
-function route(from: NodeId, to: NodeId): NodeId[] {
+function route(from: NodeId, to: NodeId, links: [NodeId, NodeId][]): NodeId[] {
   const prev = new Map<NodeId, NodeId | null>([[from, null]]);
   const queue: NodeId[] = [from];
   while (queue.length) {
     const n = queue.shift()!;
     if (n === to) break;
-    for (const [a, b] of LINKS) {
+    for (const [a, b] of links) {
       const m = a === n ? b : b === n ? a : null;
       if (m && !prev.has(m)) {
         prev.set(m, n);
@@ -119,6 +127,7 @@ export class Diagram {
   private nodes = new Map<NodeId, SVGGElement>();
   private links = new Map<string, SVGLineElement>();
   private names: Partial<Record<NodeId, string>> = {};
+  private enabled: [NodeId, NodeId][] = [...LINKS];
   private anim = 0;
 
   constructor(className = 'diagram') {
@@ -130,12 +139,12 @@ export class Diagram {
     this.caption.className = 'stage-caption';
     this.caption.setAttribute('aria-live', 'polite');
 
-    for (const [a, b] of LINKS) {
+    for (const [a, b] of [...LINKS, ...OPTIONAL_LINKS]) {
       const l = document.createElementNS(SVG, 'line');
       const [x1, y1] = POS[a];
       const [x2, y2] = POS[b];
       for (const [k, v] of Object.entries({ x1, y1, x2, y2 })) l.setAttribute(k, String(v));
-      l.setAttribute('class', 'link');
+      l.setAttribute('class', OPTIONAL_LINKS.some(([x, y]) => x === a && y === b) ? 'link optional' : 'link');
       this.el.append(l);
       this.links.set(`${a}-${b}`, l);
     }
@@ -144,7 +153,7 @@ export class Diagram {
       const [x, y] = POS[id];
       g.setAttribute('transform', `translate(${x} ${y})`);
       g.setAttribute('class', 'node');
-      g.innerHTML = `<circle r="44" class="halo"/>${ICON[id]}<text y="50" text-anchor="middle" class="label"></text><text y="67" text-anchor="middle" class="addr"></text>`;
+      g.innerHTML = `<circle r="44" class="halo"/><g class="icon">${ICON[id]}</g><text y="50" text-anchor="middle" class="label"></text><text y="67" text-anchor="middle" class="addr"></text>`;
       this.el.append(g);
       this.nodes.set(id, g);
     }
@@ -159,10 +168,13 @@ export class Diagram {
   }
 
   /** Set node labels, optionally overridden by the current lesson. */
-  relabel(overrides: Lesson['labels'] = {}): void {
+  relabel(overrides: Lesson['labels'] = {}, links: string[] = []): void {
+    this.enabled = [...LINKS, ...OPTIONAL_LINKS.filter(([a, b]) => links.includes(`${a}-${b}`))];
+    for (const [k, l] of this.links) l.classList.toggle('shown', links.includes(k));
     for (const [id, g] of this.nodes) {
       const [label, addr] = g.querySelectorAll('text.label, text.addr');
       const o = overrides[id];
+      g.querySelector('.icon')!.innerHTML = o?.icon ? ALT_ICON[o.icon] : ICON[id];
       this.names[id] = o ? tr(o.label) : t(LABEL[id]);
       label.textContent = this.names[id]!;
       addr.textContent = o ? o.addr ?? '' : ADDR[id];
@@ -197,7 +209,7 @@ export class Diagram {
   /** Animate a packet from one node to another along the shortest path. */
   show(from: NodeId, to: NodeId, packet: Packet, animate: boolean, onDone?: () => void): void {
     cancelAnimationFrame(this.anim);
-    const path = route(from, to);
+    const path = route(from, to, this.enabled);
     const fromName = this.names[from] ?? from;
     const toName = this.names[to] ?? to;
     this.el.setAttribute('aria-label', `Packet travelling from ${fromName} to ${toName}`);

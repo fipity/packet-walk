@@ -48,6 +48,8 @@ const en = {
   packetList: 'Packets in this lesson',
   prevLesson: 'Previous lesson',
   nextLesson: 'Next lesson',
+  models: 'OSI & TCP/IP models',
+  ctaModels: 'Explore the OSI & TCP/IP models',
 };
 
 export type Key = keyof typeof en;

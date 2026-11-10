@@ -5,10 +5,11 @@ import { GROUPS } from './groups';
 import { LOCALES, getLocale, setLocale, t, tr } from './i18n';
 import { hex8, type LayerKind, type Packet } from './bytes';
 import type { Lesson } from './lessons/network';
+import { osiOf, renderModels } from './models';
 
 const REPO = 'https://github.com/fipity/packet-walk';
 
-type View = 'home' | 'lesson';
+type View = 'home' | 'lesson' | 'models';
 const state = { view: 'home' as View, lesson: 0, step: 0, field: -1, playing: false };
 let playTimer = 0;
 let heroTimer = 0;
@@ -58,6 +59,7 @@ app.innerHTML = `
       <span>packet<b>-walk</b></span>
     </a>
     <a class="toplink all" href="#/"></a>
+    <a class="toplink models-link" href="#/models"></a>
     <span class="spacer"></span>
     <label class="lang"><span class="sr"></span><select></select></label>
     <button class="icon-btn theme" type="button"></button>
@@ -70,7 +72,7 @@ app.innerHTML = `
         <p class="eyebrow"></p>
         <h1><span class="t1"></span><br><span class="grad t2"></span></h1>
         <p class="lede"></p>
-        <div class="cta"><a class="btn primary go-start"></a><a class="btn go-load" href="#/page-load"></a></div>
+        <div class="cta"><a class="btn primary go-start"></a><a class="btn go-load" href="#/page-load"></a><a class="btn go-models" href="#/models"></a></div>
         <ul class="stats"></ul>
       </div>
       <div class="hero-stage stage"></div>
@@ -103,6 +105,8 @@ app.innerHTML = `
       <nav class="pager"></nav>
     </main>
   </div>
+
+  <section class="models" hidden></section>
 
   <footer><span class="lic"></span> · <a href="${REPO}" target="_blank" rel="noopener" class="src"></a> · <span class="keys"></span></footer>
 `;
@@ -147,6 +151,8 @@ function lessonLink(l: Lesson, cls: string): HTMLAnchorElement {
 
 function renderChrome(): void {
   $('.all').textContent = t('allLessons');
+  $('.models-link').textContent = t('models');
+  $('.go-models').textContent = t('ctaModels');
   $('.lang .sr').textContent = t('language');
   $('.gh').textContent = t('source');
   $('.prev').textContent = `← ${t('prev')}`;
@@ -181,10 +187,10 @@ function renderChrome(): void {
     }),
   );
   $('.groups').replaceChildren(
-    ...GROUPS.map((g, gi) => {
+    ...GROUPS.map((g) => {
       const sec = h('section', 'group');
       const head = h('div', 'group-head');
-      head.append(h('span', 'group-num', `L${gi + 1}`), h('h2', '', g.name), h('p', '', g.blurb));
+      head.append(h('span', 'group-num', g.osi), h('h2', '', g.name), h('p', '', g.blurb));
       const grid = h('div', 'cards');
       for (const id of g.ids) {
         const i = lessonIndex(id);
@@ -206,7 +212,7 @@ function renderChrome(): void {
   $('.sidebar').replaceChildren(
     ...GROUPS.map((g) => {
       const sec = h('div', 'side-group');
-      sec.append(h('h2', '', g.name));
+      sec.append(h('h2', '', `${g.osi} · ${g.name}`));
       const ol = h('ol', 'lesson-list');
       for (const id of g.ids) {
         const i = lessonIndex(id);
@@ -239,7 +245,8 @@ function endpoints(p: Packet): [string, string] {
     const f = p.fields.filter((x) => x.layer === ipL);
     return [f.find((x) => x.name === 'Source address')?.value ?? '?', f.find((x) => x.name === 'Destination address')?.value ?? '?'];
   }
-  const macs = p.fields.filter((x) => x.layer === 0 && x.length === 6).map((x) => x.value.replace(' (broadcast)', ''));
+  const linkL = Math.max(0, p.layers.findIndex((l) => l.kind === 'eth' || l.kind === 'wifi'));
+  const macs = p.fields.filter((x) => x.layer === linkL && x.length === 6).map((x) => x.value.replace(' (broadcast)', ''));
   const bcast = (m: string) => (m === 'ff:ff:ff:ff:ff:ff' ? 'Broadcast' : m);
   return [bcast(macs[1] ?? '?'), bcast(macs[0] ?? '?')];
 }
@@ -303,7 +310,9 @@ function renderPacket(p: Packet): void {
       d.style.setProperty('--depth', String(l.depth));
       d.style.setProperty('--c', kindColor(l.kind));
       const s = h('summary');
-      s.append(h('span', 'swatch'), h('span', 'lname', l.name), h('span', 'lsize', t('bytesTotal', { n: l.length })));
+      const osi = h('span', 'osi', `L${osiOf(l)}`);
+      osi.title = `OSI layer ${osiOf(l)}`;
+      s.append(h('span', 'swatch'), osi, h('span', 'lname', l.name), h('span', 'lsize', t('bytesTotal', { n: l.length })));
       d.append(s);
       p.fields.forEach((f, fi) => {
         if (f.layer !== li) return;
@@ -398,7 +407,7 @@ function renderLesson(animate: boolean): void {
   if (renderedLesson !== state.lesson) {
     renderedLesson = state.lesson;
     document.querySelectorAll<HTMLElement>('.lesson-link').forEach((a) => a.classList.toggle('current', Number(a.dataset.i) === state.lesson));
-    diagram.relabel(lesson.labels);
+    diagram.relabel(lesson.labels, lesson.links);
     $('.crumb').textContent = `${groupOf(lesson.id)?.name ?? ''} · ${t('lessonOf', { n: state.lesson + 1, total: LESSONS.length })}`;
     $('.lesson-head h1').textContent = tr(lesson.title);
     $('.intro').textContent = tr(lesson.intro);
@@ -536,18 +545,22 @@ function heroLoop(): void {
   });
 }
 
+const VIEW_SEL: Record<View, string> = { home: '.home', lesson: '.lesson-view', models: '.models' };
+
 function showView(view: View): void {
-  if (state.view === view && !$(`.${view === 'home' ? 'home' : 'lesson-view'}`).hidden) return;
+  if (state.view === view && !$(VIEW_SEL[view]).hidden) return;
   state.view = view;
   $('.home').hidden = view !== 'home';
   $('.lesson-view').hidden = view !== 'lesson';
+  $('.models').hidden = view !== 'models';
   $('.all').hidden = view === 'home';
+  $('.models-link').classList.toggle('current', view === 'models');
   document.body.dataset.view = view;
   if (view === 'home') {
     setPlayingQuiet(false);
     diagram.stop();
     document.title = 'packet-walk · see how the internet works';
-    hero.relabel(demo.labels);
+    hero.relabel(demo.labels, demo.links);
     heroLoop();
   } else {
     clearTimeout(heroTimer);
@@ -557,6 +570,14 @@ function showView(view: View): void {
 
 function route(): void {
   const [, id, n] = location.hash.split('/');
+  if (id === 'models') {
+    renderedLesson = -1;
+    showView('models');
+    renderModels($('.models'), Math.min(7, Math.max(1, Number(n) || 7)));
+    document.title = 'OSI & TCP/IP models · packet-walk';
+    window.scrollTo({ top: 0 });
+    return;
+  }
   const li = id ? lessonIndex(id) : -1;
   if (li < 0) {
     renderedLesson = -1;

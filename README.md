@@ -14,27 +14,37 @@ to see which field it belongs to and what it means.
 
 | # | Layer | Lesson | Protocols |
 |---|-------|--------|-----------|
-| 1 | Link | Ethernet & ARP: finding the router | Ethernet II, ARP |
-| 2 | Link | Wi-Fi & WPA2: beacon, association, 4-way handshake, CCMP | 802.11, EAPOL |
-| 3 | Network | DHCP: getting an address (Discover, Offer, Request, Ack) | DHCP, UDP |
-| 4 | Network | IP & ICMP: ping, NAT and traceroute | IPv4, ICMP |
-| 5 | Network | IPv6: SLAAC, neighbor discovery, ping without NAT | IPv6, ICMPv6 |
-| 6 | Network | BGP: two networks peer and exchange routes | BGP, TCP |
-| 7 | Network | WireGuard: 1-RTT handshake, encrypted tunnel, keepalive | WireGuard, UDP |
-| 8 | Transport | TCP: handshake and teardown | TCP |
-| 9 | Transport | UDP & DNS: turning a name into an address | UDP, DNS |
-| 10 | Transport | QUIC & HTTP/3: a 1-RTT handshake over UDP | QUIC, TLS 1.3 |
-| 11 | Application | NTP: four timestamps, one clock offset | NTP, UDP |
-| 12 | Application | HTTP: asking for a page | HTTP/1.1 |
-| 13 | Application | HTTPS & TLS 1.3: making it private | TLS 1.3 |
-| 14 | Application | WebSocket: upgrade, masked frames, close | WebSocket |
-| 15 | Application | SSH: version exchange, KEXINIT, Curve25519 key exchange | SSH |
-| 16 | Application | FTP: control and data connections, plain-text passwords | FTP |
-| 17 | Application | SMB: negotiate, tree connect, open and read a file | SMB 3.1.1 |
-| 18 | Application | SMTP: one server delivers mail to another, pipelined | SMTP |
-| 19 | Application | IMAP: tags, literals, IDLE push | IMAP |
-| 20 | Application | POP3: download and delete | POP3 |
-| 21 | Application | Loading a web page: everything together | DNS, TCP, TLS, HTTP |
+| 1 | L1 Physical | Physical layer: preamble, SFD and a real CRC-32 FCS; a flipped bit | Ethernet PHY |
+| 2 | L2 Link | Ethernet & ARP: finding the router | Ethernet II, ARP |
+| 3 | L2 Link | Wi-Fi & WPA2: beacon, association, 4-way handshake, CCMP | 802.11, EAPOL |
+| 4 | L3 Network | DHCP: getting an address (Discover, Offer, Request, Ack) | DHCP, UDP |
+| 5 | L3 Network | IP & ICMP: ping, NAT and traceroute | IPv4, ICMP |
+| 6 | L3 Network | IPv6: SLAAC, neighbor discovery, ping without NAT | IPv6, ICMPv6 |
+| 7 | L3 Network | BGP: two networks peer and exchange routes | BGP, TCP |
+| 8 | L3 Network | WireGuard: 1-RTT handshake, encrypted tunnel, keepalive | WireGuard, UDP |
+| 9 | L4 Transport | TCP: handshake and teardown | TCP |
+| 10 | L4 Transport | UDP & DNS: turning a name into an address | UDP, DNS |
+| 11 | L4 Transport | QUIC & HTTP/3: a 1-RTT handshake over UDP | QUIC, TLS 1.3 |
+| 12 | L5–7 Application | NTP: four timestamps, one clock offset | NTP, UDP |
+| 13 | L5–7 Application | DNSSEC: RRSIG, DNSKEY, DS and the chain of trust | DNSSEC, EDNS0 |
+| 14 | L5–7 Application | HTTP: asking for a page | HTTP/1.1 |
+| 15 | L5–7 Application | HTTPS & TLS 1.3: making it private | TLS 1.3 |
+| 16 | L5–7 Application | WebSocket: upgrade, masked frames, close | WebSocket |
+| 17 | L5–7 Application | SSH: version exchange, KEXINIT, Curve25519 key exchange | SSH |
+| 18 | L5–7 Application | SSH tunneling: local port forwarding to a private database | SSH, PostgreSQL |
+| 19 | L5–7 Application | FTP: control and data connections, plain-text passwords | FTP |
+| 20 | L5–7 Application | SMB: negotiate, tree connect, open and read a file | SMB 3.1.1 |
+| 21 | L5–7 Application | RADIUS: Access-Request/Reject/Accept and accounting (AAA) | RADIUS |
+| 22 | L5–7 Application | SMTP: one server delivers mail to another, pipelined | SMTP |
+| 23 | L5–7 Application | IMAP: tags, literals, IDLE push | IMAP |
+| 24 | L5–7 Application | POP3: download and delete | POP3 |
+| 25 | L5–7 Application | Loading a web page: everything together | DNS, TCP, TLS, HTTP |
+
+There is also an **OSI & TCP/IP models** page (`#/models`). It compares the 7-layer OSI
+model with the 5- and 4-layer TCP/IP models, and explains every layer, including Session
+and Presentation, with links to the lessons where you can see it. It ends with one real
+packet broken down by layer. In the packet inspector, every protocol layer is tagged with
+its OSI layer number.
 
 ## What you see
 
@@ -55,6 +65,11 @@ and TLS record framing. The test suite checks that every byte of every packet is
 described exactly once and that every checksum verifies. Exported to a pcap file, they
 decode cleanly in `tcpdump` and Wireshark.
 
+Several values are really computed rather than made up: RADIUS authenticators, hidden
+passwords and Message-Authenticators (MD5 and HMAC-MD5 with the shared secret), DNSSEC
+key tags and DS digests (SHA-256), and the Ethernet FCS (CRC-32). `src/crypto.ts` is
+tested against the published test vectors.
+
 Some simplifications are deliberate:
 
 - Encrypted TLS records, QUIC payloads and SSH packets contain deterministic
@@ -64,6 +79,8 @@ Some simplifications are deliberate:
   deployments encrypt them (the lessons say so).
 - Some messages are sent but not shown (e.g. SMB session setup, FTP's 150 reply);
   they still advance TCP sequence numbers so the shown packets stay consistent.
+- DNSSEC public keys and signatures are illustrative bytes. The DS digest and key tags
+  computed from them are real.
 - Wi-Fi frames are shown without radiotap headers or FCS; encrypted handshake
   key data and SMB signatures are illustrative bytes.
 - The WebSocket handshake uses the sample key and accept values from RFC 6455.
@@ -100,6 +117,8 @@ src/
   lessons/          the imaginary network and the lesson scripts
   diagram.ts        animated network diagram and layer chips
   groups.ts         lesson grouping and order (by layer)
+  models.ts         OSI / TCP/IP reference data and the models page
+  crypto.ts         MD5, HMAC-MD5, SHA-256, CRC-32
   i18n.ts           UI strings and locale handling
   main.ts           the app: home page, lesson view, packet list and inspector
 test/               byte-level consistency tests

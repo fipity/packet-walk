@@ -9,6 +9,7 @@ import { MORE } from './more';
 import { ROUTING } from './routing';
 import { MAIL_LESSONS } from './mail';
 import { LOCAL_LESSONS } from './local';
+import { ADVANCED } from './advanced';
 import { NET, ON_LAPTOP, TcpConn, fromLaptop, toLaptop, udpFromLaptop, udpToLaptop, type Lesson, type Step } from './network';
 
 // ------------------------------------------------------------ Ethernet & ARP
@@ -340,6 +341,10 @@ const ALL: Lesson[] = [
     steps: [arpRequest, arpReply],
   },
   LOCAL_LESSONS.wifiLesson,
+  ADVANCED.physicalLesson,
+  ADVANCED.sshTunnelLesson,
+  ADVANCED.radiusLesson,
+  ADVANCED.dnssecLesson,
   MORE.dhcpLesson,
   {
     id: 'ip-icmp',
