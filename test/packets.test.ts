@@ -220,3 +220,41 @@ describe('IPv6, BGP and NTP', () => {
     expect((T4 - T1) - (T3 - T2)).toBeCloseTo(0.024, 4);
   });
 });
+
+describe('SMTP, IMAP and WireGuard', () => {
+  const lesson = (id: string) => LESSONS.find((l) => l.id === id)!;
+  const text = (p: Packet, kind: string) => {
+    const l = p.layers.find((x) => x.kind === kind)!;
+    return new TextDecoder('latin1').decode(p.bytes.subarray(l.offset, l.offset + l.length));
+  };
+
+  it('ends the SMTP message with CRLF.CRLF and every SMTP line with CRLF', () => {
+    for (const s of lesson('smtp').steps) expect(text(s.packet, 'smtp').endsWith('\r\n')).toBe(true);
+    const msg = lesson('smtp').steps.find((s) => s.packet.layers.some((l) => l.name === 'Email message'))!;
+    expect(text(msg.packet, 'smtp')).toMatch(/\r\n\r\n[\s\S]*\r\n\.\r\n$/);
+  });
+
+  it('announces the exact IMAP literal length', () => {
+    const t = lesson('imap').steps.map((s) => text(s.packet, 'imap')).find((x) => x.includes('FETCH ('))!;
+    const m = t.match(/\{(\d+)\}\r\n/)!;
+    const start = t.indexOf(m[0]) + m[0].length;
+    expect(t.slice(start + Number(m[1]))).toBe(')\r\na3 OK FETCH completed\r\n');
+  });
+
+  it('uses the WireGuard message sizes from the protocol', () => {
+    const sizes = lesson('wireguard').steps.map((s) => s.packet.layers.find((l) => l.kind === 'wg')!.length);
+    expect(sizes[0]).toBe(148);
+    expect(sizes[1]).toBe(92);
+    expect((sizes[2] - 32) % 16).toBe(0);
+    expect(sizes[4]).toBe(32);
+  });
+
+  it('writes WireGuard indexes little-endian and echoes the sender index', () => {
+    const [init, resp] = lesson('wireguard').steps.map((s) => {
+      const l = s.packet.layers.find((x) => x.kind === 'wg')!;
+      return new DataView(s.packet.bytes.buffer, s.packet.bytes.byteOffset + l.offset);
+    });
+    expect(init.getUint32(4, true)).toBe(resp.getUint32(8, true));
+    expect(init.getUint32(4, true)).toBe(0x8c1e5a73);
+  });
+});

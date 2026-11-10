@@ -6,6 +6,7 @@ import { icmpEcho, icmpTimeExceeded, ipv4 } from '../protocols/inet';
 import { dnsQuery, dnsResponse, http, tlsChangeCipherSpec, tlsClientHello, tlsEncrypted, tlsServerHello } from '../protocols/app';
 import { MORE } from './more';
 import { ROUTING } from './routing';
+import { MAIL_LESSONS } from './mail';
 import { NET, ON_LAPTOP, TcpConn, fromLaptop, toLaptop, udpFromLaptop, udpToLaptop, type Lesson, type Step } from './network';
 
 // ------------------------------------------------------------ Ethernet & ARP
@@ -379,6 +380,9 @@ export const LESSONS: Lesson[] = [
   MORE.quicLesson,
   MORE.sshLesson,
   MORE.ftpLesson,
+  MAIL_LESSONS.smtpLesson,
+  MAIL_LESSONS.imapLesson,
+  MAIL_LESSONS.wireguardLesson,
   {
     id: 'page-load',
     title: 'Loading a web page',

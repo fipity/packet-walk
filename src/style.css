@@ -25,6 +25,9 @@
   --k-ftp: #a16207;
   --k-bgp: #be123c;
   --k-ntp: #0369a1;
+  --k-smtp: #db2777;
+  --k-imap: #c2410c;
+  --k-wg: #e11d48;
 
   --mono: ui-monospace, 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Menlo, Consolas, monospace;
   --sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
@@ -59,6 +62,9 @@
     --k-ftp: #facc15;
     --k-bgp: #fb7185;
     --k-ntp: #38bdf8;
+    --k-smtp: #f472b6;
+    --k-imap: #fb923c;
+    --k-wg: #fb7185;
     color-scheme: dark;
   }
 }
@@ -561,6 +567,9 @@ main {
 .b.k-ftp { color: var(--k-ftp); }
 .b.k-bgp { color: var(--k-bgp); }
 .b.k-ntp { color: var(--k-ntp); }
+.b.k-smtp { color: var(--k-smtp); }
+.b.k-imap { color: var(--k-imap); }
+.b.k-wg { color: var(--k-wg); }
 
 .b.hover {
   background: var(--panel-2);
