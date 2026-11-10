@@ -320,3 +320,12 @@ describe('POP3, SMB and Wi-Fi', () => {
     expect(fc[9]).toEqual([0x08, 0x41]); // data, To DS + Protected
   });
 });
+
+describe('lesson groups', () => {
+  it('puts every lesson in exactly one group', async () => {
+    const { GROUPS } = await import('../src/groups');
+    const ids = GROUPS.flatMap((g) => g.ids);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect([...ids].sort()).toEqual(LESSONS.map((l) => l.id).sort());
+  });
+});

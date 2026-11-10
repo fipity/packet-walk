@@ -12,29 +12,39 @@ to see which field it belongs to and what it means.
 
 ## Lessons
 
-| # | Lesson | Protocols |
-|---|--------|-----------|
-| 1 | Ethernet & ARP: finding the router | Ethernet II, ARP |
-| 2 | Wi-Fi & WPA2: beacon, association, 4-way handshake, CCMP | 802.11, EAPOL |
-| 3 | DHCP: getting an address (Discover, Offer, Request, Ack) | DHCP, UDP |
-| 4 | IP & ICMP: ping, NAT and traceroute | IPv4, ICMP |
-| 5 | IPv6: SLAAC, neighbor discovery, ping without NAT | IPv6, ICMPv6 |
-| 6 | BGP: two networks peer and exchange routes | BGP, TCP |
-| 7 | UDP & DNS: turning a name into an address | UDP, DNS |
-| 8 | NTP: four timestamps, one clock offset | NTP, UDP |
-| 9 | TCP: handshake and teardown | TCP |
-| 10 | HTTP: asking for a page | HTTP/1.1 |
-| 11 | HTTPS & TLS 1.3: making it private | TLS 1.3 |
-| 12 | WebSocket: upgrade, masked frames, close | WebSocket |
-| 13 | QUIC & HTTP/3: a 1-RTT handshake over UDP | QUIC, TLS 1.3 |
-| 14 | SSH: version exchange, KEXINIT, Curve25519 key exchange | SSH |
-| 15 | FTP: control and data connections, plain-text passwords | FTP |
-| 16 | SMB: negotiate, tree connect, open and read a file | SMB 3.1.1 |
-| 17 | SMTP: one server delivers mail to another, pipelined | SMTP |
-| 18 | IMAP: tags, literals, IDLE push | IMAP |
-| 19 | POP3: download and delete | POP3 |
-| 20 | WireGuard: 1-RTT handshake, encrypted tunnel, keepalive | WireGuard, UDP |
-| 21 | Loading a web page: everything together | DNS, TCP, TLS, HTTP |
+| # | Layer | Lesson | Protocols |
+|---|-------|--------|-----------|
+| 1 | Link | Ethernet & ARP: finding the router | Ethernet II, ARP |
+| 2 | Link | Wi-Fi & WPA2: beacon, association, 4-way handshake, CCMP | 802.11, EAPOL |
+| 3 | Network | DHCP: getting an address (Discover, Offer, Request, Ack) | DHCP, UDP |
+| 4 | Network | IP & ICMP: ping, NAT and traceroute | IPv4, ICMP |
+| 5 | Network | IPv6: SLAAC, neighbor discovery, ping without NAT | IPv6, ICMPv6 |
+| 6 | Network | BGP: two networks peer and exchange routes | BGP, TCP |
+| 7 | Network | WireGuard: 1-RTT handshake, encrypted tunnel, keepalive | WireGuard, UDP |
+| 8 | Transport | TCP: handshake and teardown | TCP |
+| 9 | Transport | UDP & DNS: turning a name into an address | UDP, DNS |
+| 10 | Transport | QUIC & HTTP/3: a 1-RTT handshake over UDP | QUIC, TLS 1.3 |
+| 11 | Application | NTP: four timestamps, one clock offset | NTP, UDP |
+| 12 | Application | HTTP: asking for a page | HTTP/1.1 |
+| 13 | Application | HTTPS & TLS 1.3: making it private | TLS 1.3 |
+| 14 | Application | WebSocket: upgrade, masked frames, close | WebSocket |
+| 15 | Application | SSH: version exchange, KEXINIT, Curve25519 key exchange | SSH |
+| 16 | Application | FTP: control and data connections, plain-text passwords | FTP |
+| 17 | Application | SMB: negotiate, tree connect, open and read a file | SMB 3.1.1 |
+| 18 | Application | SMTP: one server delivers mail to another, pipelined | SMTP |
+| 19 | Application | IMAP: tags, literals, IDLE push | IMAP |
+| 20 | Application | POP3: download and delete | POP3 |
+| 21 | Application | Loading a web page: everything together | DNS, TCP, TLS, HTTP |
+
+## What you see
+
+- **An animated stage.** The packet is drawn as a row of layer chips (for example
+  `ETH | IPv4 | TCP | TLS`). The sender wraps the data layer by layer, the router
+  rebuilds the link-layer frame, and the receiver unwraps it.
+- **A Wireshark-style inspector.** A packet list shows every step of the lesson
+  (source, destination, protocol, length, info). Below it are a decoded layer tree and a
+  hex dump that highlight each other as you click.
+- **A dark theme by default**, with a light theme one click away.
 
 ## The packets are real
 
@@ -72,7 +82,9 @@ npm test        # check every packet byte by byte
 npm run build   # build a static site into dist/
 ```
 
-There are no runtime dependencies. It's plain TypeScript and SVG, built with Vite.
+There are no runtime dependencies. It's plain TypeScript and SVG, built with Vite. Fonts
+(Inter, Space Grotesk, JetBrains Mono) load from Google Fonts. If they're blocked, system
+fonts are used instead.
 
 ## Project layout
 
@@ -86,9 +98,10 @@ src/
                     mail.ts (SMTP, IMAP, POP3, WireGuard),
                     smb.ts, wifi.ts (802.11, EAPOL)
   lessons/          the imaginary network and the lesson scripts
-  diagram.ts        animated network diagram
+  diagram.ts        animated network diagram and layer chips
+  groups.ts         lesson grouping and order (by layer)
   i18n.ts           UI strings and locale handling
-  main.ts           the app: lesson navigation and packet inspector
+  main.ts           the app: home page, lesson view, packet list and inspector
 test/               byte-level consistency tests
 ```
 

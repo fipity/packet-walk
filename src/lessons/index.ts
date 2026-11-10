@@ -4,6 +4,7 @@ import { concat, randomBytes } from '../bytes';
 import { arp, ethernet, BROADCAST } from '../protocols/link';
 import { icmpEcho, icmpTimeExceeded, ipv4 } from '../protocols/inet';
 import { dnsQuery, dnsResponse, http, tlsChangeCipherSpec, tlsClientHello, tlsEncrypted, tlsServerHello } from '../protocols/app';
+import { GROUPS } from '../groups';
 import { MORE } from './more';
 import { ROUTING } from './routing';
 import { MAIL_LESSONS } from './mail';
@@ -330,7 +331,7 @@ const tlsSteps: Step[] = [
 
 // ------------------------------------------------------------ Lessons
 
-export const LESSONS: Lesson[] = [
+const ALL: Lesson[] = [
   {
     id: 'ethernet-arp',
     title: 'Ethernet & ARP',
@@ -396,3 +397,6 @@ export const LESSONS: Lesson[] = [
   },
 ];
 
+/** Lessons in the order of their groups (link → network → transport → application). */
+const order = GROUPS.flatMap((g) => g.ids);
+export const LESSONS: Lesson[] = [...ALL].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
