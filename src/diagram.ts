@@ -1,7 +1,8 @@
 // The network diagram: five nodes, the links between them, and an animated packet.
 import type { NodeId } from './lessons/network';
 import { NET } from './lessons/network';
-import { t, type Key } from './i18n';
+import { t, tr, type Key } from './i18n';
+import type { Lesson } from './lessons/network';
 
 const SVG = 'http://www.w3.org/2000/svg';
 
@@ -109,11 +110,16 @@ export class Diagram {
     this.relabel();
   }
 
-  relabel(): void {
+  private names: Partial<Record<NodeId, string>> = {};
+
+  /** Set node labels, optionally overridden by the current lesson. */
+  relabel(overrides: Lesson['labels'] = {}): void {
     for (const [id, g] of this.nodes) {
       const [label, addr] = g.querySelectorAll('text.label, text.addr');
-      label.textContent = t(LABEL[id]);
-      addr.textContent = ADDR[id];
+      const o = overrides[id];
+      this.names[id] = o ? tr(o.label) : t(LABEL[id]);
+      label.textContent = this.names[id]!;
+      addr.textContent = o ? o.addr ?? '' : ADDR[id];
     }
   }
 
@@ -121,7 +127,7 @@ export class Diagram {
   show(from: NodeId, to: NodeId, color: string, animate: boolean, onDone?: () => void): void {
     cancelAnimationFrame(this.anim);
     const path = route(from, to);
-    this.el.setAttribute('aria-label', `Packet travelling from ${t(LABEL[from])} to ${t(LABEL[to])}`);
+    this.el.setAttribute('aria-label', `Packet travelling from ${this.names[from]} to ${this.names[to]}`);
     for (const [k, l] of this.links) {
       const [a, b] = k.split('-');
       const active = path.some((n, i) => i > 0 && ((path[i - 1] === a && n === b) || (path[i - 1] === b && n === a)));

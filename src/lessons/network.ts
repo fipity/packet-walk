@@ -29,6 +29,8 @@ export interface Lesson {
   protocols: string[];
   intro: Text;
   steps: Step[];
+  /** Rename diagram nodes for this lesson (e.g. the "server" node as an NTP server). */
+  labels?: Partial<Record<NodeId, { label: Text; addr?: string }>>;
 }
 
 export const ON_LAPTOP = 'Captured on the laptop\'s network link';
@@ -60,7 +62,20 @@ export function udpToLaptop(src: string, srcPort: number, dstPort: number, paylo
   return toLaptop(src, 'UDP', udp({ src, dst: NET.laptop.ip, srcPort, dstPort }, payload), 56, false);
 }
 
-/** Tracks sequence numbers for one TCP connection between the laptop and a server. */
+/** How a TCP connection's segments are addressed and framed. Defaults to laptop ↔ server. */
+export interface Ends {
+  clientIp: string;
+  frameClient(serverIp: string, seg: Packet): Packet;
+  frameServer(serverIp: string, seg: Packet): Packet;
+}
+
+const LAPTOP_ENDS: Ends = {
+  clientIp: NET.laptop.ip,
+  frameClient: (serverIp, seg) => fromLaptop(serverIp, 'TCP', seg),
+  frameServer: (serverIp, seg) => toLaptop(serverIp, 'TCP', seg),
+};
+
+/** Tracks sequence numbers for one TCP connection (by default between the laptop and a server). */
 export class TcpConn {
   private cNext: number;
   private sNext: number;
@@ -71,6 +86,7 @@ export class TcpConn {
     readonly serverPort: number,
     readonly clientIsn: number,
     readonly serverIsn: number,
+    readonly ends: Ends = LAPTOP_ENDS,
   ) {
     this.cNext = clientIsn;
     this.sNext = serverIsn;
@@ -84,27 +100,27 @@ export class TcpConn {
   client(flags: TcpFlag[], payload?: Packet): Packet {
     const seg = tcp(
       {
-        src: NET.laptop.ip, dst: this.serverIp, srcPort: this.clientPort, dstPort: this.serverPort,
+        src: this.ends.clientIp, dst: this.serverIp, srcPort: this.clientPort, dstPort: this.serverPort,
         seq: this.cNext, ack: flags.includes('ACK') ? this.sNext : 0, flags,
         window: flags.includes('SYN') ? 64240 : 502, seqBase: this.clientIsn, ackBase: this.serverIsn,
       },
       payload,
     );
     this.cNext = (this.cNext + this.advance(flags, payload)) >>> 0;
-    return fromLaptop(this.serverIp, 'TCP', seg);
+    return this.ends.frameClient(this.serverIp, seg);
   }
 
   /** Segment from server to laptop. */
   server(flags: TcpFlag[], payload?: Packet): Packet {
     const seg = tcp(
       {
-        src: this.serverIp, dst: NET.laptop.ip, srcPort: this.serverPort, dstPort: this.clientPort,
+        src: this.serverIp, dst: this.ends.clientIp, srcPort: this.serverPort, dstPort: this.clientPort,
         seq: this.sNext, ack: flags.includes('ACK') ? this.cNext : 0, flags,
         window: flags.includes('SYN') ? 65160 : 509, seqBase: this.serverIsn, ackBase: this.clientIsn,
       },
       payload,
     );
     this.sNext = (this.sNext + this.advance(flags, payload)) >>> 0;
-    return toLaptop(this.serverIp, 'TCP', seg);
+    return this.ends.frameServer(this.serverIp, seg);
   }
 }

@@ -23,6 +23,8 @@
   --k-quic: #4f46e5;
   --k-ssh: #475569;
   --k-ftp: #a16207;
+  --k-bgp: #be123c;
+  --k-ntp: #0369a1;
 
   --mono: ui-monospace, 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Menlo, Consolas, monospace;
   --sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
@@ -55,6 +57,8 @@
     --k-quic: #818cf8;
     --k-ssh: #94a3b8;
     --k-ftp: #facc15;
+    --k-bgp: #fb7185;
+    --k-ntp: #38bdf8;
     color-scheme: dark;
   }
 }
@@ -555,6 +559,8 @@ main {
 .b.k-quic { color: var(--k-quic); }
 .b.k-ssh { color: var(--k-ssh); }
 .b.k-ftp { color: var(--k-ftp); }
+.b.k-bgp { color: var(--k-bgp); }
+.b.k-ntp { color: var(--k-ntp); }
 
 .b.hover {
   background: var(--panel-2);

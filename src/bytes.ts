@@ -8,7 +8,7 @@
 export type Text = string | Record<string, string>;
 
 export type LayerKind =
-  | 'eth' | 'arp' | 'dhcp' | 'ip' | 'icmp' | 'udp' | 'tcp' | 'dns' | 'http' | 'tls' | 'ws' | 'quic' | 'ssh' | 'ftp';
+  | 'eth' | 'arp' | 'dhcp' | 'ip' | 'icmp' | 'udp' | 'tcp' | 'dns' | 'http' | 'tls' | 'ws' | 'quic' | 'ssh' | 'ftp' | 'bgp' | 'ntp';
 
 export interface Field {
   /** Index into `Packet.layers`. */

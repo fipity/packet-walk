@@ -17,15 +17,18 @@ to see which field it belongs to and what it means.
 | 1 | Ethernet & ARP: finding the router | Ethernet II, ARP |
 | 2 | DHCP: getting an address (Discover, Offer, Request, Ack) | DHCP, UDP |
 | 3 | IP & ICMP: ping, NAT and traceroute | IPv4, ICMP |
-| 4 | UDP & DNS: turning a name into an address | UDP, DNS |
-| 5 | TCP: handshake and teardown | TCP |
-| 6 | HTTP: asking for a page | HTTP/1.1 |
-| 7 | HTTPS & TLS 1.3: making it private | TLS 1.3 |
-| 8 | WebSocket: upgrade, masked frames, close | WebSocket |
-| 9 | QUIC & HTTP/3: a 1-RTT handshake over UDP | QUIC, TLS 1.3 |
-| 10 | SSH: version exchange, KEXINIT, Curve25519 key exchange | SSH |
-| 11 | FTP: control and data connections, plain-text passwords | FTP |
-| 12 | Loading a web page: everything together | DNS, TCP, TLS, HTTP |
+| 4 | IPv6: SLAAC, neighbor discovery, ping without NAT | IPv6, ICMPv6 |
+| 5 | BGP: two networks peer and exchange routes | BGP, TCP |
+| 6 | UDP & DNS: turning a name into an address | UDP, DNS |
+| 7 | NTP: four timestamps, one clock offset | NTP, UDP |
+| 8 | TCP: handshake and teardown | TCP |
+| 9 | HTTP: asking for a page | HTTP/1.1 |
+| 10 | HTTPS & TLS 1.3: making it private | TLS 1.3 |
+| 11 | WebSocket: upgrade, masked frames, close | WebSocket |
+| 12 | QUIC & HTTP/3: a 1-RTT handshake over UDP | QUIC, TLS 1.3 |
+| 13 | SSH: version exchange, KEXINIT, Curve25519 key exchange | SSH |
+| 14 | FTP: control and data connections, plain-text passwords | FTP |
+| 15 | Loading a web page: everything together | DNS, TCP, TLS, HTTP |
 
 ## The packets are real
 
@@ -45,7 +48,8 @@ Some simplifications are deliberate:
 - The server's certificate flight is trimmed to fit in one TCP segment.
 - The Ethernet frame check sequence (FCS) isn't shown, because network cards add and
   strip it in hardware and packet captures don't include it either.
-- All addresses come from documentation (RFC 5737) and private (RFC 1918) ranges.
+- All addresses come from documentation ranges (RFC 5737, and 2001:db8::/32 for IPv6),
+  private ranges (RFC 1918) and documentation AS numbers (RFC 5398).
 
 ## Running locally
 
@@ -65,7 +69,8 @@ src/
   bytes.ts          packet model: Header builder, layering, checksums
   protocols/        encoders: link.ts (Ethernet, ARP), inet.ts (IPv4, ICMP, UDP, TCP),
                     app.ts (DNS, HTTP, TLS 1.3), dhcp.ts, quic.ts,
-                    text.ts (WebSocket, SSH, FTP)
+                    text.ts (WebSocket, SSH, FTP), ipv6.ts
+                    (IPv6, ICMPv6, Neighbor Discovery), infra.ts (BGP, NTP)
   lessons/          the imaginary network and the lesson scripts
   diagram.ts        animated network diagram
   i18n.ts           UI strings and locale handling

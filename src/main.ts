@@ -229,6 +229,7 @@ function render(animate: boolean): void {
   document.title = `${tr(lesson.title)} · packet-walk`;
 
   document.querySelectorAll('.lesson-link').forEach((a, i) => a.classList.toggle('current', i === state.lesson));
+  diagram.relabel(lesson.labels);
   $('.lesson-head h1').textContent = tr(lesson.title);
   $('.intro').textContent = tr(lesson.intro);
   $('.step h2').textContent = tr(step.title);

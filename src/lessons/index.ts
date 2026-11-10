@@ -5,6 +5,7 @@ import { arp, ethernet, BROADCAST } from '../protocols/link';
 import { icmpEcho, icmpTimeExceeded, ipv4 } from '../protocols/inet';
 import { dnsQuery, dnsResponse, http, tlsChangeCipherSpec, tlsClientHello, tlsEncrypted, tlsServerHello } from '../protocols/app';
 import { MORE } from './more';
+import { ROUTING } from './routing';
 import { NET, ON_LAPTOP, TcpConn, fromLaptop, toLaptop, udpFromLaptop, udpToLaptop, type Lesson, type Step } from './network';
 
 // ------------------------------------------------------------ Ethernet & ARP
@@ -343,6 +344,8 @@ export const LESSONS: Lesson[] = [
     intro: 'IP gets packets from one end of the internet to the other, one router at a time. Follow a ping out and back, watch NAT rewrite it, and see how traceroute uses the TTL.',
     steps: [pingRequest, pingNat, pingReply, traceProbe, traceExceeded],
   },
+  ROUTING.ipv6Lesson,
+  ROUTING.bgpLesson,
   {
     id: 'udp-dns',
     title: 'UDP & DNS',
@@ -350,6 +353,7 @@ export const LESSONS: Lesson[] = [
     intro: 'People use names and networks use numbers. DNS translates one into the other in a single question and a single answer, carried over UDP.',
     steps: [dnsQ, dnsR],
   },
+  ROUTING.ntpLesson,
   {
     id: 'tcp',
     title: 'TCP',

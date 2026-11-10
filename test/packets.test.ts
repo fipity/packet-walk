@@ -21,6 +21,10 @@ function verify(p: Packet) {
       expect(b.length).toBe(60); // padded minimum frame
       return;
     }
+    if (type === 0x86dd) {
+      verify6(b.subarray(14));
+      return;
+    }
     expect(type).toBe(0x0800);
     ipStart = 14;
   } else if (p.layers[0].kind === 'ip') {
@@ -48,6 +52,21 @@ function verify(p: Packet) {
     expect(checksum(pseudo)).toBe(0);
     if (proto === 17) expect(u16(seg, 4)).toBe(seg.length);
   }
+}
+
+/** IPv6: payload length matches and the ICMPv6 checksum (with the IPv6 pseudo-header) verifies. */
+function verify6(ip: Uint8Array) {
+  expect(ip[0] >> 4).toBe(6);
+  const len = u16(ip, 4);
+  expect(ip.length).toBe(40 + len);
+  expect(ip[6]).toBe(58);
+  const pseudo = new Uint8Array(40 + len);
+  pseudo.set(ip.subarray(8, 40), 0);
+  pseudo[34] = len >> 8;
+  pseudo[35] = len & 0xff;
+  pseudo[39] = 58;
+  pseudo.set(ip.subarray(40), 40);
+  expect(checksum(pseudo)).toBe(0);
 }
 
 describe('lesson packets', () => {
@@ -152,5 +171,52 @@ describe('new protocols', () => {
     const data = lesson('ftp').steps.find((s) => s.packet.layers.some((l) => l.name === 'FTP data'))!.packet;
     const tcp = layerOf(data, 'tcp');
     expect(u16(data.bytes, tcp.offset)).toBe(195 * 256 + 80);
+  });
+});
+
+describe('IPv6, BGP and NTP', () => {
+  const lesson = (id: string) => LESSONS.find((l) => l.id === id)!;
+
+  it('formats and parses IPv6 addresses', async () => {
+    const { ip6, fmt6, solicitedNode, multicastMac } = await import('../src/protocols/ipv6');
+    expect(fmt6(ip6('2001:db8:1:0:1a:2bff:fe3c:4d5e'))).toBe('2001:db8:1:0:1a:2bff:fe3c:4d5e');
+    expect(fmt6(ip6('fe80:0:0:0:0:0:0:1'))).toBe('fe80::1');
+    expect(fmt6(ip6('::'))).toBe('::');
+    expect(solicitedNode('2001:db8:1:0:1a:2bff:fe3c:4d5e')).toBe('ff02::1:ff3c:4d5e');
+    expect(multicastMac('ff02::1:ff3c:4d5e')).toBe('33:33:ff:3c:4d:5e');
+  });
+
+  it('sends Neighbor Discovery with hop limit 255', () => {
+    for (const s of lesson('ipv6').steps) {
+      const ip = s.packet.bytes.subarray(14);
+      if ([133, 134, 135, 136].includes(ip[40])) expect(ip[7]).toBe(255);
+    }
+  });
+
+  it('gives every BGP message a valid marker and length, with IP TTL 1', () => {
+    for (const s of lesson('bgp').steps) {
+      expect(s.packet.bytes[14 + 8]).toBe(1);
+      const l = s.packet.layers.find((x) => x.kind === 'bgp')!;
+      const b = s.packet.bytes.subarray(l.offset, l.offset + l.length);
+      expect(Array.from(b.subarray(0, 16)).every((x) => x === 0xff)).toBe(true);
+      expect(u16(b, 16)).toBe(l.length);
+    }
+  });
+
+  it('builds 48-byte NTP packets whose timestamps give the stated offset', () => {
+    const steps = lesson('ntp').steps;
+    const ts = (b: Uint8Array, o: number) => new DataView(b.buffer, b.byteOffset).getUint32(o) + new DataView(b.buffer, b.byteOffset).getUint32(o + 4) / 2 ** 32;
+    const ntp = (i: number) => {
+      const p = steps[i].packet;
+      const l = p.layers.find((x) => x.kind === 'ntp')!;
+      expect(l.length).toBe(48);
+      return p.bytes.subarray(l.offset, l.offset + 48);
+    };
+    const reply = ntp(1);
+    const [T1, T2, T3] = [ts(reply, 24), ts(reply, 32), ts(reply, 40)];
+    const T4 = T1 + 0.0241;
+    expect(T1).toBeCloseTo(ts(ntp(0), 40), 6);
+    expect(((T2 - T1) + (T3 - T4)) / 2).toBeCloseTo(-0.12, 4);
+    expect((T4 - T1) - (T3 - T2)).toBeCloseTo(0.024, 4);
   });
 });
