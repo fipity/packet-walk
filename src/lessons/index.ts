@@ -7,6 +7,7 @@ import { dnsQuery, dnsResponse, http, tlsChangeCipherSpec, tlsClientHello, tlsEn
 import { MORE } from './more';
 import { ROUTING } from './routing';
 import { MAIL_LESSONS } from './mail';
+import { LOCAL_LESSONS } from './local';
 import { NET, ON_LAPTOP, TcpConn, fromLaptop, toLaptop, udpFromLaptop, udpToLaptop, type Lesson, type Step } from './network';
 
 // ------------------------------------------------------------ Ethernet & ARP
@@ -337,6 +338,7 @@ export const LESSONS: Lesson[] = [
     intro: 'How does a laptop find the router sitting right next to it? Local networks deliver frames by MAC address, and ARP is how an IP address is turned into a MAC.',
     steps: [arpRequest, arpReply],
   },
+  LOCAL_LESSONS.wifiLesson,
   MORE.dhcpLesson,
   {
     id: 'ip-icmp',
@@ -380,8 +382,10 @@ export const LESSONS: Lesson[] = [
   MORE.quicLesson,
   MORE.sshLesson,
   MORE.ftpLesson,
+  LOCAL_LESSONS.smbLesson,
   MAIL_LESSONS.smtpLesson,
   MAIL_LESSONS.imapLesson,
+  LOCAL_LESSONS.pop3Lesson,
   MAIL_LESSONS.wireguardLesson,
   {
     id: 'page-load',

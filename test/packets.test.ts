@@ -15,6 +15,7 @@ function* allSteps() {
 function verify(p: Packet) {
   const b = p.bytes;
   let ipStart = -1;
+  if (p.layers[0].kind === 'wifi') return; // 802.11 frames are checked separately
   if (p.layers[0].kind === 'eth') {
     const type = u16(b, 12);
     if (type === 0x0806) {
@@ -256,5 +257,66 @@ describe('SMTP, IMAP and WireGuard', () => {
     });
     expect(init.getUint32(4, true)).toBe(resp.getUint32(8, true));
     expect(init.getUint32(4, true)).toBe(0x8c1e5a73);
+  });
+});
+
+describe('POP3, SMB and Wi-Fi', () => {
+  const lesson = (id: string) => LESSONS.find((l) => l.id === id)!;
+  const text = (p: Packet, kind: string) => {
+    const l = p.layers.find((x) => x.kind === kind)!;
+    return new TextDecoder('latin1').decode(p.bytes.subarray(l.offset, l.offset + l.length));
+  };
+
+  it('makes the POP3 octet count match the message it retrieves', () => {
+    const t = lesson('pop3').steps.map((s) => text(s.packet, 'pop3')).find((x) => /^\+OK \d+ octets/.test(x))!;
+    const n = Number(t.match(/^\+OK (\d+) octets\r\n/)![1]);
+    const body = t.slice(t.indexOf('\r\n') + 2);
+    expect(body.length - '.\r\n'.length).toBe(n);
+  });
+
+  it('frames SMB with a NetBIOS length and a 64-byte \\xFESMB header', () => {
+    for (const s of lesson('smb').steps) {
+      const l = s.packet.layers.find((x) => x.name === 'NetBIOS session service')!;
+      const b = s.packet.bytes.subarray(l.offset, l.offset + l.length);
+      expect((b[1] << 16) | (b[2] << 8) | b[3]).toBe(l.length - 4);
+      expect(Array.from(b.subarray(4, 8))).toEqual([0xfe, 0x53, 0x4d, 0x42]);
+      expect(b[8] | (b[9] << 8)).toBe(64);
+    }
+  });
+
+  it('points SMB offsets at the right bytes', () => {
+    const steps = lesson('smb').steps;
+    const smb = (i: number) => {
+      const l = steps[i].packet.layers.find((x) => x.kind === 'smb' && x.name.startsWith('SMB2'))!;
+      return steps[i].packet.bytes.subarray(l.offset, l.offset + l.length);
+    };
+    const tc = smb(2);
+    const off = tc[64 + 4] | (tc[64 + 5] << 8);
+    const len = tc[64 + 6] | (tc[64 + 7] << 8);
+    expect(new TextDecoder('utf-16le').decode(tc.subarray(off, off + len))).toBe('\\\\router\\docs');
+    const neg = smb(0);
+    expect(neg[64 + 28] | (neg[64 + 29] << 8)).toBe(112);
+    expect(neg[112] | (neg[113] << 8)).toBe(1); // first negotiate context: pre-auth integrity
+  });
+
+  it('builds EAPOL-Key frames with consistent lengths and key info', () => {
+    const frames = lesson('wifi').steps.filter((s) => s.packet.layers.some((l) => l.kind === 'eapol'));
+    expect(frames).toHaveLength(4);
+    const infos = frames.map((s) => {
+      const l = s.packet.layers.find((x) => x.kind === 'eapol')!;
+      const b = s.packet.bytes.subarray(l.offset, l.offset + l.length);
+      expect(u16(b, 2)).toBe(l.length - 4);
+      expect(u16(b, 97)).toBe(l.length - 99);
+      return u16(b, 5);
+    });
+    expect(infos).toEqual([0x008a, 0x010a, 0x13ca, 0x030a]);
+  });
+
+  it('sets 802.11 frame control types and protected flag', () => {
+    const fc = lesson('wifi').steps.map((s) => [s.packet.bytes[0], s.packet.bytes[1]]);
+    expect(fc[0]).toEqual([0x80, 0x00]); // beacon
+    expect(fc[1]).toEqual([0xb0, 0x00]); // authentication
+    expect(fc[3]).toEqual([0x00, 0x00]); // association request
+    expect(fc[9]).toEqual([0x08, 0x41]); // data, To DS + Protected
   });
 });

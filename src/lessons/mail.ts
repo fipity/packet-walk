@@ -4,17 +4,17 @@ import { ipv4 } from '../protocols/inet';
 import { lines, wgInitiation, wgResponse, wgData } from '../protocols/mail';
 import { TcpConn, udpFromLaptop, udpToLaptop, ON_LAPTOP, type Lesson, type Step } from './network';
 
-const MAIL = { ip: '203.0.113.25', mac: '02:00:00:cc:00:25', gw: '02:00:00:cc:00:01', name: 'mail.example.com' };
-const SENDER = { ip: '198.51.100.25', name: 'mail.example.org' };
+export const MAIL = { ip: '203.0.113.25', mac: '02:00:00:cc:00:25', gw: '02:00:00:cc:00:01', name: 'mail.example.com' };
+export const SENDER = { ip: '198.51.100.25', name: 'mail.example.org' };
 
-const MESSAGE_HEADERS: [string, string][] = [
+export const MESSAGE_HEADERS: [string, string][] = [
   ['From', 'Alice <alice@example.org>'],
   ['To', 'Bob <bob@example.com>'],
   ['Subject', 'Lunch on Friday?'],
   ['Date', 'Wed, 11 Nov 2026 09:41:00 +0000'],
   ['Message-ID', '<20261111094100.4f2a@example.org>'],
 ];
-const BODY = ['Hi Bob,', '', 'Are you free for lunch on Friday?', '', '-- Alice'];
+export const BODY = ['Hi Bob,', '', 'Are you free for lunch on Friday?', '', '-- Alice'];
 
 // ------------------------------------------------------------ SMTP
 

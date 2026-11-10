@@ -28,6 +28,10 @@
   --k-smtp: #db2777;
   --k-imap: #c2410c;
   --k-wg: #e11d48;
+  --k-pop3: #b45309;
+  --k-smb: #9333ea;
+  --k-wifi: #0284c7;
+  --k-eapol: #ca8a04;
 
   --mono: ui-monospace, 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Menlo, Consolas, monospace;
   --sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
@@ -65,6 +69,10 @@
     --k-smtp: #f472b6;
     --k-imap: #fb923c;
     --k-wg: #fb7185;
+    --k-pop3: #fbbf24;
+    --k-smb: #c084fc;
+    --k-wifi: #38bdf8;
+    --k-eapol: #facc15;
     color-scheme: dark;
   }
 }
@@ -570,6 +578,10 @@ main {
 .b.k-smtp { color: var(--k-smtp); }
 .b.k-imap { color: var(--k-imap); }
 .b.k-wg { color: var(--k-wg); }
+.b.k-pop3 { color: var(--k-pop3); }
+.b.k-smb { color: var(--k-smb); }
+.b.k-wifi { color: var(--k-wifi); }
+.b.k-eapol { color: var(--k-eapol); }
 
 .b.hover {
   background: var(--panel-2);
