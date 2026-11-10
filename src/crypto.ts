@@ -152,3 +152,39 @@ export function crc32(data: Bytes): number {
   for (let i = 0; i < data.length; i++) c = CRC_TABLE[(c ^ data[i]) & 0xff] ^ (c >>> 8);
   return (c ^ 0xffffffff) >>> 0;
 }
+
+// ---------------------------------------------------------------- SHA-1 (FIPS 180-4), for IKEv2 NAT detection
+
+export function sha1(data: Bytes): Uint8Array {
+  const len = data.length;
+  const padded = new Uint8Array(((len + 8) >> 6) * 64 + 64);
+  padded.set(Array.from(data));
+  padded[len] = 0x80;
+  const dv = new DataView(padded.buffer);
+  const bits = len * 8;
+  dv.setUint32(padded.length - 8, Math.floor(bits / 2 ** 32));
+  dv.setUint32(padded.length - 4, bits >>> 0);
+  const H = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0];
+  const w = new Uint32Array(80);
+  const rotl = (x: number, n: number) => (x << n) | (x >>> (32 - n));
+  for (let off = 0; off < padded.length; off += 64) {
+    for (let i = 0; i < 16; i++) w[i] = dv.getUint32(off + i * 4);
+    for (let i = 16; i < 80; i++) w[i] = rotl(w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16], 1);
+    let [a, b, c, d, e] = H;
+    for (let i = 0; i < 80; i++) {
+      const [f, k] =
+        i < 20 ? [(b & c) | (~b & d), 0x5a827999] : i < 40 ? [b ^ c ^ d, 0x6ed9eba1] : i < 60 ? [(b & c) | (b & d) | (c & d), 0x8f1bbcdc] : [b ^ c ^ d, 0xca62c1d6];
+      const t = (rotl(a, 5) + f + e + k + w[i]) >>> 0;
+      e = d;
+      d = c;
+      c = rotl(b, 30) >>> 0;
+      b = a;
+      a = t;
+    }
+    [a, b, c, d, e].forEach((v, i) => (H[i] = (H[i] + v) >>> 0));
+  }
+  const out = new Uint8Array(20);
+  const ov = new DataView(out.buffer);
+  H.forEach((v, i) => ov.setUint32(i * 4, v));
+  return out;
+}

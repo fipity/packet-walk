@@ -44,6 +44,11 @@
   --k-phy: #9aa5c0;
   --k-radius: #ff8fab;
   --k-pg: #6ea8ff;
+  --k-pppoe: #d4a5ff;
+  --k-ppp: #ff9ecd;
+  --k-ike: #7cf5ff;
+  --k-esp: #ff7b54;
+  --k-modbus: #c6f432;
   color-scheme: dark;
 }
 
@@ -90,6 +95,11 @@
   --k-phy: #64748b;
   --k-radius: #be185d;
   --k-pg: #1d4ed8;
+  --k-pppoe: #6d28d9;
+  --k-ppp: #be185d;
+  --k-ike: #0e7490;
+  --k-esp: #c2410c;
+  --k-modbus: #4d7c0f;
   color-scheme: light;
 }
 
@@ -1036,6 +1046,11 @@ main {
 .b.k-phy { color: var(--k-phy); }
 .b.k-radius { color: var(--k-radius); }
 .b.k-pg { color: var(--k-pg); }
+.b.k-pppoe { color: var(--k-pppoe); }
+.b.k-ppp { color: var(--k-ppp); }
+.b.k-ike { color: var(--k-ike); }
+.b.k-esp { color: var(--k-esp); }
+.b.k-modbus { color: var(--k-modbus); }
 
 .b.hover {
   background: var(--panel-3);

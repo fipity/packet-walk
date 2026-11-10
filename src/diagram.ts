@@ -56,7 +56,9 @@ const ICON: Record<NodeId, string> = {
     '<rect x="-23" y="-26" width="46" height="15" rx="3" class="ico"/><rect x="-23" y="-7" width="46" height="15" rx="3" class="ico"/><rect x="-23" y="12" width="46" height="15" rx="3" class="ico"/><circle cx="14" cy="-18.5" r="2.3" class="led"/><circle cx="14" cy="0.5" r="2.3" class="led"/><circle cx="14" cy="19.5" r="2.3" class="led"/>',
 };
 
-const ALT_ICON = {
+const ALT_ICON: Record<'database' | 'plc', string> = {
+  plc:
+    '<rect x="-30" y="-22" width="60" height="40" rx="4" class="ico"/><rect x="-24" y="-16" width="16" height="10" rx="1.5" class="ico-screen"/><circle cx="4" cy="-11" r="2.6" class="led"/><circle cx="12" cy="-11" r="2.6" class="led dim"/><circle cx="20" cy="-11" r="2.6" class="led"/><path d="M-24 4 h48 M-24 10 h48" class="ico-line"/><path d="M-22 18 v6 M-12 18 v6 M-2 18 v6 M8 18 v6 M18 18 v6" class="ico-line"/>',
   database:
     '<ellipse cx="0" cy="-18" rx="22" ry="7" class="ico"/><path d="M-22 -18 v34 a22 7 0 0 0 44 0 v-34" class="ico"/><path d="M-22 -6 a22 7 0 0 0 44 0 M-22 6 a22 7 0 0 0 44 0" class="ico-line" fill="none"/>',
 };
@@ -67,6 +69,7 @@ const SHORT: Partial<Record<LayerKind, string>> = {
   eth: 'ETH', wifi: '802.11', arp: 'ARP', dhcp: 'DHCP', udp: 'UDP', tcp: 'TCP', dns: 'DNS', http: 'HTTP',
   ws: 'WS', quic: 'QUIC', ssh: 'SSH', ftp: 'FTP', bgp: 'BGP', ntp: 'NTP', smtp: 'SMTP', imap: 'IMAP',
   pop3: 'POP3', wg: 'WG', eapol: 'EAPOL', phy: 'PHY', radius: 'RADIUS', pg: 'PGSQL',
+  pppoe: 'PPPoE', ppp: 'PPP', ike: 'IKEv2', esp: 'ESP', modbus: 'MODBUS',
 };
 
 export function shortName(l: Layer): string {
@@ -74,6 +77,8 @@ export function shortName(l: Layer): string {
   if (l.kind === 'icmp') return l.name.includes('v6') ? 'ICMPv6' : 'ICMP';
   if (l.kind === 'tls') return l.name.startsWith('TLS record') ? 'TLS' : l.name;
   if (l.kind === 'smb') return l.name.startsWith('NetBIOS') ? 'NBSS' : 'SMB2';
+  if (l.kind === 'ppp') return l.name.startsWith('PPP (') ? 'PPP' : l.name.split(' ')[0];
+  if (l.kind === 'ike') return 'IKEv2';
   return SHORT[l.kind] ?? l.name;
 }
 

@@ -17,28 +17,31 @@ to see which field it belongs to and what it means.
 | 1 | L1 Physical | Physical layer: preamble, SFD and a real CRC-32 FCS; a flipped bit | Ethernet PHY |
 | 2 | L2 Link | Ethernet & ARP: finding the router | Ethernet II, ARP |
 | 3 | L2 Link | Wi-Fi & WPA2: beacon, association, 4-way handshake, CCMP | 802.11, EAPOL |
-| 4 | L3 Network | DHCP: getting an address (Discover, Offer, Request, Ack) | DHCP, UDP |
-| 5 | L3 Network | IP & ICMP: ping, NAT and traceroute | IPv4, ICMP |
-| 6 | L3 Network | IPv6: SLAAC, neighbor discovery, ping without NAT | IPv6, ICMPv6 |
-| 7 | L3 Network | BGP: two networks peer and exchange routes | BGP, TCP |
-| 8 | L3 Network | WireGuard: 1-RTT handshake, encrypted tunnel, keepalive | WireGuard, UDP |
-| 9 | L4 Transport | TCP: handshake and teardown | TCP |
-| 10 | L4 Transport | UDP & DNS: turning a name into an address | UDP, DNS |
-| 11 | L4 Transport | QUIC & HTTP/3: a 1-RTT handshake over UDP | QUIC, TLS 1.3 |
-| 12 | L5–7 Application | NTP: four timestamps, one clock offset | NTP, UDP |
-| 13 | L5–7 Application | DNSSEC: RRSIG, DNSKEY, DS and the chain of trust | DNSSEC, EDNS0 |
-| 14 | L5–7 Application | HTTP: asking for a page | HTTP/1.1 |
-| 15 | L5–7 Application | HTTPS & TLS 1.3: making it private | TLS 1.3 |
-| 16 | L5–7 Application | WebSocket: upgrade, masked frames, close | WebSocket |
-| 17 | L5–7 Application | SSH: version exchange, KEXINIT, Curve25519 key exchange | SSH |
-| 18 | L5–7 Application | SSH tunneling: local port forwarding to a private database | SSH, PostgreSQL |
-| 19 | L5–7 Application | FTP: control and data connections, plain-text passwords | FTP |
-| 20 | L5–7 Application | SMB: negotiate, tree connect, open and read a file | SMB 3.1.1 |
-| 21 | L5–7 Application | RADIUS: Access-Request/Reject/Accept and accounting (AAA) | RADIUS |
-| 22 | L5–7 Application | SMTP: one server delivers mail to another, pipelined | SMTP |
-| 23 | L5–7 Application | IMAP: tags, literals, IDLE push | IMAP |
-| 24 | L5–7 Application | POP3: download and delete | POP3 |
-| 25 | L5–7 Application | Loading a web page: everything together | DNS, TCP, TLS, HTTP |
+| 4 | L2 Link | PPPoE: discovery, LCP, CHAP login, IPCP, IP over PPP | PPPoE, PPP |
+| 5 | L3 Network | DHCP: getting an address (Discover, Offer, Request, Ack) | DHCP, UDP |
+| 6 | L3 Network | IP & ICMP: ping, NAT and traceroute | IPv4, ICMP |
+| 7 | L3 Network | IPv6: SLAAC, neighbor discovery, ping without NAT | IPv6, ICMPv6 |
+| 8 | L3 Network | BGP: two networks peer and exchange routes | BGP, TCP |
+| 9 | L3 Network | WireGuard: 1-RTT handshake, encrypted tunnel, keepalive | WireGuard, UDP |
+| 10 | L3 Network | IPsec: IKEv2 with NAT detection, ESP over UDP 4500 | IKEv2, ESP |
+| 11 | L4 Transport | TCP: handshake and teardown | TCP |
+| 12 | L4 Transport | UDP & DNS: turning a name into an address | UDP, DNS |
+| 13 | L4 Transport | QUIC & HTTP/3: a 1-RTT handshake over UDP | QUIC, TLS 1.3 |
+| 14 | L5–7 Application | NTP: four timestamps, one clock offset | NTP, UDP |
+| 15 | L5–7 Application | DNSSEC: RRSIG, DNSKEY, DS and the chain of trust | DNSSEC, EDNS0 |
+| 16 | L5–7 Application | HTTP: asking for a page | HTTP/1.1 |
+| 17 | L5–7 Application | HTTPS & TLS 1.3: making it private | TLS 1.3 |
+| 18 | L5–7 Application | WebSocket: upgrade, masked frames, close | WebSocket |
+| 19 | L5–7 Application | SSH: version exchange, KEXINIT, Curve25519 key exchange | SSH |
+| 20 | L5–7 Application | SSH tunneling: local port forwarding to a private database | SSH, PostgreSQL |
+| 21 | L5–7 Application | FTP: control and data connections, plain-text passwords | FTP |
+| 22 | L5–7 Application | SMB: negotiate, tree connect, open and read a file | SMB 3.1.1 |
+| 23 | L5–7 Application | RADIUS: Access-Request/Reject/Accept and accounting (AAA) | RADIUS |
+| 24 | L5–7 Application | SMTP: one server delivers mail to another, pipelined | SMTP |
+| 25 | L5–7 Application | IMAP: tags, literals, IDLE push | IMAP |
+| 26 | L5–7 Application | POP3: download and delete | POP3 |
+| 27 | L5–7 Application | Modbus/TCP: read registers, write a setpoint, switch a pump, exceptions | Modbus |
+| 28 | L5–7 Application | Loading a web page: everything together | DNS, TCP, TLS, HTTP |
 
 There is also an **OSI & TCP/IP models** page (`#/models`). It compares the 7-layer OSI
 model with the 5- and 4-layer TCP/IP models, and explains every layer, including Session
@@ -66,7 +69,8 @@ described exactly once and that every checksum verifies. Exported to a pcap file
 decode cleanly in `tcpdump` and Wireshark.
 
 Several values are really computed rather than made up: RADIUS authenticators, hidden
-passwords and Message-Authenticators (MD5 and HMAC-MD5 with the shared secret), DNSSEC
+passwords and Message-Authenticators (MD5 and HMAC-MD5 with the shared secret), the PPP
+CHAP response (MD5), IKEv2 NAT-detection hashes (SHA-1), DNSSEC
 key tags and DS digests (SHA-256), and the Ethernet FCS (CRC-32). `src/crypto.ts` is
 tested against the published test vectors.
 
@@ -118,7 +122,7 @@ src/
   diagram.ts        animated network diagram and layer chips
   groups.ts         lesson grouping and order (by layer)
   models.ts         OSI / TCP/IP reference data and the models page
-  crypto.ts         MD5, HMAC-MD5, SHA-256, CRC-32
+  crypto.ts         MD5, HMAC-MD5, SHA-1, SHA-256, CRC-32
   i18n.ts           UI strings and locale handling
   main.ts           the app: home page, lesson view, packet list and inspector
 test/               byte-level consistency tests

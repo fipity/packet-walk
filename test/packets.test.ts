@@ -26,6 +26,15 @@ function verify(p: Packet) {
       verify6(b.subarray(14));
       return;
     }
+    if (type === 0x8863) return; // PPPoE discovery: checked separately
+    if (type === 0x8864) {
+      // PPPoE session: only IPv4 payloads (PPP protocol 0x0021) carry an IP header to check.
+      if (u16(b, 20) !== 0x0021) return;
+      const ip = b.subarray(22);
+      expect(u16(ip, 2)).toBe(ip.length);
+      expect(checksum(ip.subarray(0, 20))).toBe(0);
+      return;
+    }
     expect(type).toBe(0x0800);
     ipStart = 14;
   } else if (p.layers[0].kind === 'ip') {
@@ -403,5 +412,75 @@ describe('physical layer, SSH tunneling, RADIUS and DNSSEC', async () => {
     expect((dsP.bytes[dsTag.offset] << 8) | dsP.bytes[dsTag.offset + 1]).toBe(keyTag(rdata));
     const owner = [7, ...new TextEncoder().encode('example'), 3, ...new TextEncoder().encode('com'), 0];
     expect(Array.from(dsP.bytes.subarray(digest.offset, digest.offset + 32))).toEqual(Array.from(sha256(cat(owner, rdata))));
+  });
+});
+
+describe('PPPoE, IPsec and Modbus', async () => {
+  const { md5, sha1 } = await import('../src/crypto');
+  const lesson = (id: string) => LESSONS.find((l) => l.id === id)!;
+  const cat = (...a: ArrayLike<number>[]) => Uint8Array.from(a.flatMap((x) => Array.from(x)));
+  const layerBytes = (p: Packet, kind: string, nth = 0) => {
+    const l = p.layers.filter((x) => x.kind === kind)[nth];
+    return p.bytes.subarray(l.offset, l.offset + l.length);
+  };
+
+  it('sets PPPoE payload lengths and EtherTypes for discovery and session', () => {
+    for (const s of lesson('pppoe').steps) {
+      const b = s.packet.bytes;
+      const type = u16(b, 12);
+      expect([0x8863, 0x8864]).toContain(type);
+      const first = layerBytes(s.packet, 'pppoe');
+      expect(u16(first, 4)).toBe(first.length - 6);
+      expect(first[0]).toBe(0x11);
+    }
+  });
+
+  it('computes the CHAP response as MD5(id | password | challenge)', () => {
+    const steps = lesson('pppoe').steps;
+    const challengeMsg = steps.find((s) => s.title.toString().startsWith('CHAP Challenge'))!.packet;
+    const responseMsg = steps.find((s) => s.title.toString().startsWith('CHAP Response'))!.packet;
+    const ch = layerBytes(challengeMsg, 'ppp', 1);
+    const rs = layerBytes(responseMsg, 'ppp', 1);
+    const challenge = ch.subarray(5, 5 + ch[4]);
+    const expected = md5(cat([rs[1]], new TextEncoder().encode('dsl-password'), challenge));
+    expect(Array.from(rs.subarray(5, 21))).toEqual(Array.from(expected));
+    expect(u16(rs, 2)).toBe(rs.length);
+  });
+
+  it('builds IKEv2 messages with correct lengths and real NAT-detection hashes', () => {
+    const [req, resp, auth] = lesson('ipsec').steps.slice(0, 3).map((s) => layerBytes(s.packet, 'ike'));
+    const len32 = (b: Uint8Array, o: number) => new DataView(b.buffer, b.byteOffset).getUint32(o);
+    expect(len32(req, 24)).toBe(req.length);
+    expect(len32(resp, 24)).toBe(resp.length);
+    expect(auth.subarray(0, 4).every((x) => x === 0)).toBe(true); // non-ESP marker
+    expect(len32(auth, 4 + 24)).toBe(auth.length - 4);
+    const spiI = req.subarray(0, 8);
+    const spiR = resp.subarray(8, 16);
+    const hash = (spiR_: ArrayLike<number>, a: number[], port: number) => Array.from(sha1(cat(spiI, spiR_, a, [port >> 8, port & 255])));
+    // The responder hashes the router's public address; the laptop's own address gives a different hash: NAT detected.
+    const respDst = Array.from(resp.subarray(resp.length - 20));
+    expect(respDst).toEqual(hash(spiR, [198, 51, 100, 7], 500));
+    expect(respDst).not.toEqual(hash(spiR, [192, 168, 1, 23], 500));
+  });
+
+  it('pads ESP payloads to a 4-byte boundary', () => {
+    const espSteps = lesson('ipsec').steps.filter((s) => s.packet.layers.some((l) => l.kind === 'esp'));
+    expect(espSteps).toHaveLength(2);
+    for (const s of espSteps) {
+      const e = layerBytes(s.packet, 'esp');
+      expect((e.length - 8 - 8 - 16) % 4).toBe(0);
+    }
+  });
+
+  it('sets the Modbus MBAP length and exception bit', () => {
+    const steps = lesson('modbus').steps;
+    for (const s of steps) {
+      const m = layerBytes(s.packet, 'modbus');
+      expect(u16(m, 2)).toBe(0);
+      expect(u16(m, 4)).toBe(m.length - 6);
+    }
+    const last = layerBytes(steps[steps.length - 1].packet, 'modbus');
+    expect(last[7]).toBe(0x83);
+    expect(last[8]).toBe(2);
   });
 });

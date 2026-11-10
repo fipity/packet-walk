@@ -29,6 +29,8 @@ export const OSI: OsiLayer[] = [
       { label: 'SSH', lesson: 'ssh', note: 'Remote shells' },
       { label: 'FTP / SMB', lesson: 'smb', note: 'File transfer and sharing' },
       { label: 'DHCP / NTP / RADIUS / BGP', lesson: 'radius', note: 'Network services, which are themselves applications' },
+      { label: 'Modbus', lesson: 'modbus', note: 'Reading sensors and switching machines in industrial control systems' },
+      { label: 'IKEv2', lesson: 'ipsec', note: 'Negotiates IPsec keys. It is an application protocol over UDP that sets up layer-3 security' },
     ],
   },
   {
@@ -78,6 +80,7 @@ export const OSI: OsiLayer[] = [
       { label: 'IPv6', lesson: 'ipv6', note: '128-bit addresses and neighbor discovery' },
       { label: 'ICMP', lesson: 'ip-icmp', note: 'Ping and error messages' },
       { label: 'WireGuard', lesson: 'wireguard', note: 'A layer-3 tunnel: whole IP packets carried inside UDP' },
+      { label: 'IPsec ESP', lesson: 'ipsec', note: 'Encryption at the IP layer itself, in tunnel mode' },
       { label: 'BGP routes', lesson: 'bgp', note: 'BGP itself runs over TCP, but it builds the network layer\'s routing tables' },
     ],
   },
@@ -91,6 +94,7 @@ export const OSI: OsiLayer[] = [
       { label: '802.11 Wi-Fi', lesson: 'wifi', note: 'Three addresses, acknowledgements and WPA2' },
       { label: 'ARP', lesson: 'ethernet-arp', note: 'Bridges layer 3 and layer 2: it maps IP addresses to MAC addresses' },
       { label: 'EAPOL', lesson: 'wifi', note: 'Port access control before the link carries traffic' },
+      { label: 'PPPoE / PPP', lesson: 'pppoe', note: 'Point-to-point sessions over Ethernet, as used by DSL and fibre ISPs' },
     ],
   },
   {
@@ -129,10 +133,13 @@ export function osiOf(l: Layer): number {
     case 'wifi':
     case 'arp':
     case 'eapol':
+    case 'pppoe':
+    case 'ppp':
       return 2;
     case 'ip':
     case 'icmp':
     case 'wg':
+    case 'esp':
       return 3;
     case 'tcp':
     case 'udp':

@@ -10,6 +10,7 @@ import { ROUTING } from './routing';
 import { MAIL_LESSONS } from './mail';
 import { LOCAL_LESSONS } from './local';
 import { ADVANCED } from './advanced';
+import { ACCESS } from './access';
 import { NET, ON_LAPTOP, TcpConn, fromLaptop, toLaptop, udpFromLaptop, udpToLaptop, type Lesson, type Step } from './network';
 
 // ------------------------------------------------------------ Ethernet & ARP
@@ -342,6 +343,9 @@ const ALL: Lesson[] = [
   },
   LOCAL_LESSONS.wifiLesson,
   ADVANCED.physicalLesson,
+  ACCESS.pppoeLesson,
+  ACCESS.ipsecLesson,
+  ACCESS.modbusLesson,
   ADVANCED.sshTunnelLesson,
   ADVANCED.radiusLesson,
   ADVANCED.dnssecLesson,

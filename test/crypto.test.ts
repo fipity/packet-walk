@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { md5, hmacMd5, sha256, crc32 } from '../src/crypto';
+import { md5, hmacMd5, sha256, sha1, crc32 } from '../src/crypto';
 
 const enc = (s: string) => new TextEncoder().encode(s);
 const hex = (b: Uint8Array) => Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
@@ -17,6 +17,10 @@ describe('hash functions (known test vectors)', () => {
     expect(hex(sha256(enc('abc')))).toBe('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
     expect(hex(sha256(enc('')))).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
     expect(hex(sha256(enc('abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq')))).toBe('248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1');
+  });
+  it('SHA-1 (FIPS 180-4)', () => {
+    expect(hex(sha1(enc('abc')))).toBe('a9993e364706816aba3e25717850c26c9cd0d89d');
+    expect(hex(sha1(enc('abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq')))).toBe('84983e441c3bd26ebaae4aa1f95129e5e54670f1');
   });
   it('CRC-32 (IEEE 802.3)', () => {
     expect(crc32(enc('123456789'))).toBe(0xcbf43926);

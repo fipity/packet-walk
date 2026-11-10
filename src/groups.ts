@@ -21,14 +21,14 @@ export const GROUPS: Group[] = [
     name: 'Link layer',
     osi: 'L2',
     blurb: 'Getting frames to the next device over a cable or radio, using MAC addresses.',
-    ids: ['ethernet-arp', 'wifi'],
+    ids: ['ethernet-arp', 'wifi', 'pppoe'],
   },
   {
     id: 'network',
     name: 'Network layer',
     osi: 'L3',
     blurb: 'Addresses, routes and tunnels that carry packets across the internet.',
-    ids: ['dhcp', 'ip-icmp', 'ipv6', 'bgp', 'wireguard'],
+    ids: ['dhcp', 'ip-icmp', 'ipv6', 'bgp', 'wireguard', 'ipsec'],
   },
   {
     id: 'transport',
@@ -42,6 +42,6 @@ export const GROUPS: Group[] = [
     name: 'Application layer',
     osi: 'L5–7',
     blurb: 'The protocols you actually use: names, time, the web, remote access, files and mail.',
-    ids: ['ntp', 'dnssec', 'http', 'tls', 'websocket', 'ssh', 'ssh-tunnel', 'ftp', 'smb', 'radius', 'smtp', 'imap', 'pop3', 'page-load'],
+    ids: ['ntp', 'dnssec', 'http', 'tls', 'websocket', 'ssh', 'ssh-tunnel', 'ftp', 'smb', 'radius', 'smtp', 'imap', 'pop3', 'modbus', 'page-load'],
   },
 ];

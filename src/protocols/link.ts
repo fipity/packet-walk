@@ -3,7 +3,7 @@ import { Header, layer, mac, ip, hex16, type Packet } from '../bytes';
 
 export const BROADCAST = 'ff:ff:ff:ff:ff:ff';
 
-const ETHERTYPES = { IPv4: 0x0800, ARP: 0x0806, IPv6: 0x86dd } as const;
+const ETHERTYPES = { IPv4: 0x0800, ARP: 0x0806, IPv6: 0x86dd, PPPoED: 0x8863, PPPoES: 0x8864 } as const;
 
 export function ethernet(o: { dst: string; src: string; type: keyof typeof ETHERTYPES }, payload: Packet): Packet {
   const h = new Header();
