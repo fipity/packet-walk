@@ -1,0 +1,19 @@
+{
+  "name": "packet-walk",
+  "version": "0.1.0",
+  "description": "Free, open-source interactive lessons that show how the internet works, packet by packet, with every byte decoded.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.5"
+  }
+}
