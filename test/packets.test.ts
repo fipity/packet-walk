@@ -484,3 +484,63 @@ describe('PPPoE, IPsec and Modbus', async () => {
     expect(last[8]).toBe(2);
   });
 });
+
+describe('SIP, RTSP and NTS', () => {
+  const lesson = (id: string) => LESSONS.find((l) => l.id === id)!;
+  const text = (p: Packet, kind: string) =>
+    p.layers.filter((x) => x.kind === kind && x.depth === p.layers.find((y) => y.kind === kind)!.depth)
+      .map((l) => new TextDecoder('latin1').decode(p.bytes.subarray(l.offset, l.offset + l.length))).join('');
+
+  it('makes SIP and RTSP Content-Length match the SDP body', () => {
+    for (const id of ['sip', 'rtsp']) {
+      for (const s of lesson(id).steps) {
+        const msg = text(s.packet, id);
+        if (!msg) continue;
+        const len = Number(msg.match(/Content-Length: (\d+)\r\n/)![1]);
+        const sdp = s.packet.layers.find((l) => l.kind === 'sdp');
+        expect(len).toBe(sdp ? sdp.length : 0);
+        expect(msg.endsWith('\r\n\r\n')).toBe(true);
+      }
+    }
+  });
+
+  it('builds RTP headers with version 2 and the payload size the codec implies', () => {
+    const rtpSteps = [...lesson('sip').steps, ...lesson('rtsp').steps].filter((s) => s.packet.layers.some((l) => l.name === 'RTP'));
+    expect(rtpSteps).toHaveLength(3);
+    for (const s of rtpSteps) {
+      const l = s.packet.layers.find((x) => x.name === 'RTP')!;
+      expect(s.packet.bytes[l.offset] >> 6).toBe(2);
+      const pt = s.packet.bytes[l.offset + 1] & 0x7f;
+      if (pt === 0) expect(l.length).toBe(12 + 160);
+      else expect(pt).toBe(96);
+    }
+  });
+
+  it('pads NTS extension fields to 4 bytes and echoes the unique ID', () => {
+    const steps = lesson('nts').steps;
+    const fields = (i: number) => {
+      const p = steps[i].packet;
+      const l = p.layers.find((x) => x.name === 'NTS extension fields')!;
+      const b = p.bytes.subarray(l.offset, l.offset + l.length);
+      const out: { type: number; body: Uint8Array }[] = [];
+      for (let o = 0; o < b.length; ) {
+        const len = u16(b, o + 2);
+        expect(len % 4).toBe(0);
+        out.push({ type: u16(b, o), body: b.subarray(o + 4, o + len) });
+        o += len;
+      }
+      return out;
+    };
+    const req = fields(4);
+    const resp = fields(5);
+    expect(req.map((f) => f.type)).toEqual([0x0104, 0x0204, 0x0404]);
+    expect(Array.from(resp[0].body)).toEqual(Array.from(req[0].body));
+    // Authenticator: nonce length + ciphertext length match the field.
+    for (const auth of [req[2], resp[1]]) expect(4 + u16(auth.body, 0) + u16(auth.body, 2)).toBe(auth.body.length);
+  });
+
+  it('asks for the ntske/1 ALPN in the NTS-KE ClientHello', () => {
+    const ch = lesson('nts').steps[0].packet;
+    expect(new TextDecoder('latin1').decode(ch.bytes)).toContain('ntske/1');
+  });
+});

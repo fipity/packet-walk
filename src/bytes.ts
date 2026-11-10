@@ -9,7 +9,8 @@ export type Text = string | Record<string, string>;
 
 export type LayerKind =
   | 'eth' | 'arp' | 'dhcp' | 'ip' | 'icmp' | 'udp' | 'tcp' | 'dns' | 'http' | 'tls' | 'ws' | 'quic' | 'ssh' | 'ftp' | 'bgp' | 'ntp' | 'smtp' | 'imap' | 'wg' | 'pop3' | 'smb' | 'wifi' | 'eapol' | 'phy' | 'radius' | 'pg'
-  | 'pppoe' | 'ppp' | 'ike' | 'esp' | 'modbus';
+  | 'pppoe' | 'ppp' | 'ike' | 'esp' | 'modbus'
+  | 'sip' | 'sdp' | 'rtp' | 'rtsp';
 
 export interface Field {
   /** Index into `Packet.layers`. */

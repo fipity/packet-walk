@@ -115,7 +115,8 @@ function handshake(type: 1 | 2, name: string, body: Header): Packet {
   return layer(name, 'tls', h, undefined, body);
 }
 
-export function tlsClientHello(o: { sni: string; seed: number }): Packet {
+export function tlsClientHello(o: { sni: string; seed: number; alpn?: string }): Packet {
+  const alpn = o.alpn ?? 'http/1.1';
   const b = new Header();
   b.u16('Legacy version', 0x0303, '0x0303 (TLS 1.2)', 'Kept at 1.2 for compatibility. The supported_versions extension below is what really offers TLS 1.3.');
   b.bytes('Random', randomBytes(o.seed, 32), undefined, '32 fresh random bytes. They are mixed into the keys so that every session is unique.');
@@ -147,9 +148,9 @@ export function tlsClientHello(o: { sni: string; seed: number }): Packet {
     x.u16('Algorithm', 0x0401, 'rsa_pkcs1_sha256');
   });
   ext(e, 0x0010, 'application_layer_protocol_negotiation', (x) => {
-    x.u16('ALPN list length', 9, '9 bytes');
-    x.u8('Protocol length', 8, '8 bytes');
-    x.ascii('Protocol', 'http/1.1', 'http/1.1', 'The application protocol the client wants to speak inside the encrypted tunnel.');
+    x.u16('ALPN list length', alpn.length + 1, `${alpn.length + 1} bytes`);
+    x.u8('Protocol length', alpn.length, `${alpn.length} bytes`);
+    x.ascii('Protocol', alpn, alpn, 'The application protocol the client wants to speak inside the encrypted tunnel.');
   });
   ext(e, 0x002b, 'supported_versions', (x) => {
     x.u8('Versions length', 2, '2 bytes');

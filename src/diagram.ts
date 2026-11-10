@@ -56,7 +56,11 @@ const ICON: Record<NodeId, string> = {
     '<rect x="-23" y="-26" width="46" height="15" rx="3" class="ico"/><rect x="-23" y="-7" width="46" height="15" rx="3" class="ico"/><rect x="-23" y="12" width="46" height="15" rx="3" class="ico"/><circle cx="14" cy="-18.5" r="2.3" class="led"/><circle cx="14" cy="0.5" r="2.3" class="led"/><circle cx="14" cy="19.5" r="2.3" class="led"/>',
 };
 
-const ALT_ICON: Record<'database' | 'plc', string> = {
+const ALT_ICON: Record<'database' | 'plc' | 'phone' | 'camera', string> = {
+  phone:
+    '<rect x="-26" y="-10" width="52" height="30" rx="5" class="ico"/><rect x="-18" y="-4" width="16" height="9" rx="1.5" class="ico-screen"/><path d="M4 -2 h14 M4 4 h14 M4 10 h14" class="ico-line"/><path d="M-28 -12 c0 -14 56 -14 56 0 l-10 4 l-6 -6 h-24 l-6 6 z" class="ico"/>',
+  camera:
+    '<rect x="-28" y="-14" width="44" height="26" rx="6" class="ico"/><circle cx="-6" cy="-1" r="8" class="ico-screen"/><circle cx="-6" cy="-1" r="3.5" class="led"/><path d="M16 -6 l14 -8 v26 l-14 -8 z" class="ico"/><path d="M-6 12 v12 M-16 24 h20" class="ico-line"/>',
   plc:
     '<rect x="-30" y="-22" width="60" height="40" rx="4" class="ico"/><rect x="-24" y="-16" width="16" height="10" rx="1.5" class="ico-screen"/><circle cx="4" cy="-11" r="2.6" class="led"/><circle cx="12" cy="-11" r="2.6" class="led dim"/><circle cx="20" cy="-11" r="2.6" class="led"/><path d="M-24 4 h48 M-24 10 h48" class="ico-line"/><path d="M-22 18 v6 M-12 18 v6 M-2 18 v6 M8 18 v6 M18 18 v6" class="ico-line"/>',
   database:
@@ -70,6 +74,7 @@ const SHORT: Partial<Record<LayerKind, string>> = {
   ws: 'WS', quic: 'QUIC', ssh: 'SSH', ftp: 'FTP', bgp: 'BGP', ntp: 'NTP', smtp: 'SMTP', imap: 'IMAP',
   pop3: 'POP3', wg: 'WG', eapol: 'EAPOL', phy: 'PHY', radius: 'RADIUS', pg: 'PGSQL',
   pppoe: 'PPPoE', ppp: 'PPP', ike: 'IKEv2', esp: 'ESP', modbus: 'MODBUS',
+  sip: 'SIP', sdp: 'SDP', rtsp: 'RTSP',
 };
 
 export function shortName(l: Layer): string {
@@ -79,6 +84,8 @@ export function shortName(l: Layer): string {
   if (l.kind === 'smb') return l.name.startsWith('NetBIOS') ? 'NBSS' : 'SMB2';
   if (l.kind === 'ppp') return l.name.startsWith('PPP (') ? 'PPP' : l.name.split(' ')[0];
   if (l.kind === 'ike') return 'IKEv2';
+  if (l.kind === 'rtp') return l.name === 'RTP' ? 'RTP' : l.name.startsWith('H.264') ? 'H.264' : 'G.711';
+  if (l.kind === 'ntp' && l.name.startsWith('NTS')) return 'NTS';
   return SHORT[l.kind] ?? l.name;
 }
 

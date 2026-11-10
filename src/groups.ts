@@ -42,6 +42,6 @@ export const GROUPS: Group[] = [
     name: 'Application layer',
     osi: 'L5–7',
     blurb: 'The protocols you actually use: names, time, the web, remote access, files and mail.',
-    ids: ['ntp', 'dnssec', 'http', 'tls', 'websocket', 'ssh', 'ssh-tunnel', 'ftp', 'smb', 'radius', 'smtp', 'imap', 'pop3', 'modbus', 'page-load'],
+    ids: ['ntp', 'nts', 'dnssec', 'http', 'tls', 'websocket', 'sip', 'rtsp', 'ssh', 'ssh-tunnel', 'ftp', 'smb', 'radius', 'smtp', 'imap', 'pop3', 'modbus', 'page-load'],
   },
 ];

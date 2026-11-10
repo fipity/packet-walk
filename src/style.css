@@ -49,6 +49,10 @@
   --k-ike: #7cf5ff;
   --k-esp: #ff7b54;
   --k-modbus: #c6f432;
+  --k-sip: #ff8ad8;
+  --k-sdp: #ffcf6e;
+  --k-rtp: #5cffd6;
+  --k-rtsp: #9fb4ff;
   color-scheme: dark;
 }
 
@@ -100,6 +104,10 @@
   --k-ike: #0e7490;
   --k-esp: #c2410c;
   --k-modbus: #4d7c0f;
+  --k-sip: #a21caf;
+  --k-sdp: #a16207;
+  --k-rtp: #047857;
+  --k-rtsp: #3730a3;
   color-scheme: light;
 }
 
@@ -1051,6 +1059,10 @@ main {
 .b.k-ike { color: var(--k-ike); }
 .b.k-esp { color: var(--k-esp); }
 .b.k-modbus { color: var(--k-modbus); }
+.b.k-sip { color: var(--k-sip); }
+.b.k-sdp { color: var(--k-sdp); }
+.b.k-rtp { color: var(--k-rtp); }
+.b.k-rtsp { color: var(--k-rtsp); }
 
 .b.hover {
   background: var(--panel-3);

@@ -143,7 +143,7 @@ const ipsecLesson: Lesson = {
   id: 'ipsec',
   title: 'IPsec (IKEv2 + ESP)',
   protocols: ['IKEv2', 'ESP', 'IPsec', 'UDP'],
-  labels: { server: { label: 'IPsec VPN gateway', addr: `${VPN} · LAN 10.10.0.0/16` } },
+  labels: { server: { label: 'IPsec VPN gateway', addr: VPN } },
   intro:
     'IPsec secures traffic at the IP layer itself. It is used for site-to-site links between offices and for many company VPNs. IKEv2 negotiates keys in two exchanges, then ESP carries the encrypted packets. ' +
     'Because the laptop is behind a NAT router, you can also watch IKEv2 detect the NAT and move everything to UDP port 4500.',

@@ -11,6 +11,7 @@ import { MAIL_LESSONS } from './mail';
 import { LOCAL_LESSONS } from './local';
 import { ADVANCED } from './advanced';
 import { ACCESS } from './access';
+import { REALTIME } from './realtime';
 import { NET, ON_LAPTOP, TcpConn, fromLaptop, toLaptop, udpFromLaptop, udpToLaptop, type Lesson, type Step } from './network';
 
 // ------------------------------------------------------------ Ethernet & ARP
@@ -344,6 +345,9 @@ const ALL: Lesson[] = [
   LOCAL_LESSONS.wifiLesson,
   ADVANCED.physicalLesson,
   ACCESS.pppoeLesson,
+  REALTIME.sipLesson,
+  REALTIME.rtspLesson,
+  REALTIME.ntsLesson,
   ACCESS.ipsecLesson,
   ACCESS.modbusLesson,
   ADVANCED.sshTunnelLesson,
