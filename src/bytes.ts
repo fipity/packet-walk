@@ -7,7 +7,8 @@
 /** Plain English text, or one string per locale code (`{ en: '…', es: '…' }`). */
 export type Text = string | Record<string, string>;
 
-export type LayerKind = 'eth' | 'arp' | 'ip' | 'icmp' | 'udp' | 'tcp' | 'dns' | 'http' | 'tls';
+export type LayerKind =
+  | 'eth' | 'arp' | 'dhcp' | 'ip' | 'icmp' | 'udp' | 'tcp' | 'dns' | 'http' | 'tls' | 'ws' | 'quic' | 'ssh' | 'ftp';
 
 export interface Field {
   /** Index into `Packet.layers`. */

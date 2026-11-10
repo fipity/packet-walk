@@ -18,6 +18,11 @@
   --k-dns: #d97706;
   --k-http: #dc2626;
   --k-tls: #0d9488;
+  --k-dhcp: #c026d3;
+  --k-ws: #65a30d;
+  --k-quic: #4f46e5;
+  --k-ssh: #475569;
+  --k-ftp: #a16207;
 
   --mono: ui-monospace, 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Menlo, Consolas, monospace;
   --sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
@@ -45,6 +50,11 @@
     --k-dns: #fbbf24;
     --k-http: #f87171;
     --k-tls: #2dd4bf;
+    --k-dhcp: #e879f9;
+    --k-ws: #a3e635;
+    --k-quic: #818cf8;
+    --k-ssh: #94a3b8;
+    --k-ftp: #facc15;
     color-scheme: dark;
   }
 }
@@ -540,6 +550,11 @@ main {
 .b.k-dns { color: var(--k-dns); }
 .b.k-http { color: var(--k-http); }
 .b.k-tls { color: var(--k-tls); }
+.b.k-dhcp { color: var(--k-dhcp); }
+.b.k-ws { color: var(--k-ws); }
+.b.k-quic { color: var(--k-quic); }
+.b.k-ssh { color: var(--k-ssh); }
+.b.k-ftp { color: var(--k-ftp); }
 
 .b.hover {
   background: var(--panel-2);

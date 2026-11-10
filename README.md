@@ -15,12 +15,17 @@ to see which field it belongs to and what it means.
 | # | Lesson | Protocols |
 |---|--------|-----------|
 | 1 | Ethernet & ARP: finding the router | Ethernet II, ARP |
-| 2 | IP & ICMP: ping, NAT and traceroute | IPv4, ICMP |
-| 3 | UDP & DNS: turning a name into an address | UDP, DNS |
-| 4 | TCP: handshake and teardown | TCP |
-| 5 | HTTP: asking for a page | HTTP/1.1 |
-| 6 | TLS 1.3: making it private | TLS 1.3 |
-| 7 | Loading a web page: everything together | DNS, TCP, TLS, HTTP |
+| 2 | DHCP: getting an address (Discover, Offer, Request, Ack) | DHCP, UDP |
+| 3 | IP & ICMP: ping, NAT and traceroute | IPv4, ICMP |
+| 4 | UDP & DNS: turning a name into an address | UDP, DNS |
+| 5 | TCP: handshake and teardown | TCP |
+| 6 | HTTP: asking for a page | HTTP/1.1 |
+| 7 | HTTPS & TLS 1.3: making it private | TLS 1.3 |
+| 8 | WebSocket: upgrade, masked frames, close | WebSocket |
+| 9 | QUIC & HTTP/3: a 1-RTT handshake over UDP | QUIC, TLS 1.3 |
+| 10 | SSH: version exchange, KEXINIT, Curve25519 key exchange | SSH |
+| 11 | FTP: control and data connections, plain-text passwords | FTP |
+| 12 | Loading a web page: everything together | DNS, TCP, TLS, HTTP |
 
 ## The packets are real
 
@@ -33,8 +38,10 @@ decode cleanly in `tcpdump` and Wireshark.
 
 Some simplifications are deliberate:
 
-- Encrypted TLS records contain deterministic pseudo-random bytes of the correct
-  length. They are not real ciphertext.
+- Encrypted TLS records, QUIC payloads and SSH packets contain deterministic
+  pseudo-random bytes of the correct length. They are not real ciphertext, and
+  QUIC header-protection bits are randomised the same way.
+- The WebSocket handshake uses the sample key and accept values from RFC 6455.
 - The server's certificate flight is trimmed to fit in one TCP segment.
 - The Ethernet frame check sequence (FCS) isn't shown, because network cards add and
   strip it in hardware and packet captures don't include it either.
@@ -57,7 +64,8 @@ There are no runtime dependencies. It's plain TypeScript and SVG, built with Vit
 src/
   bytes.ts          packet model: Header builder, layering, checksums
   protocols/        encoders: link.ts (Ethernet, ARP), inet.ts (IPv4, ICMP, UDP, TCP),
-                    app.ts (DNS, HTTP, TLS 1.3)
+                    app.ts (DNS, HTTP, TLS 1.3), dhcp.ts, quic.ts,
+                    text.ts (WebSocket, SSH, FTP)
   lessons/          the imaginary network and the lesson scripts
   diagram.ts        animated network diagram
   i18n.ts           UI strings and locale handling

@@ -97,3 +97,60 @@ describe('specific encodings', () => {
     expect(text.endsWith('\r\n\r\n')).toBe(true);
   });
 });
+
+describe('new protocols', () => {
+  const lesson = (id: string) => LESSONS.find((l) => l.id === id)!;
+  const layerOf = (p: Packet, kind: string) => p.layers.find((l) => l.kind === kind)!;
+
+  it('pads DHCP messages to the 300-byte BOOTP minimum and ends options with 255', () => {
+    for (const s of lesson('dhcp').steps) {
+      const d = layerOf(s.packet, 'dhcp');
+      expect(d.length).toBeGreaterThanOrEqual(300);
+      expect(u16(s.packet.bytes, d.offset + 236) << 16 | u16(s.packet.bytes, d.offset + 238)).toBe(0x63825363);
+      expect(Array.from(s.packet.bytes.subarray(d.offset, d.offset + d.length))).toContain(255);
+    }
+  });
+
+  it('pads the QUIC client Initial datagram to 1200 bytes', () => {
+    const p = lesson('quic').steps[0].packet;
+    const udp = layerOf(p, 'udp');
+    expect(udp.length - 8).toBe(1200);
+  });
+
+  it('QUIC long-header Length fields cover the rest of each packet', () => {
+    for (const s of lesson('quic').steps) {
+      for (const f of s.packet.fields.filter((x) => x.name === 'Length' && s.packet.layers[x.layer].kind === 'quic')) {
+        const l = s.packet.layers[f.layer];
+        const len = ((s.packet.bytes[f.offset] & 0x3f) << 8) | s.packet.bytes[f.offset + 1];
+        expect(f.offset + 2 + len).toBe(l.offset + l.length);
+      }
+    }
+  });
+
+  it('masks the WebSocket client frame so it unmasks to the original text', () => {
+    const p = lesson('websocket').steps[2].packet;
+    const ws = layerOf(p, 'ws');
+    const b = p.bytes.subarray(ws.offset, ws.offset + ws.length);
+    expect(b[1] & 0x80).toBe(0x80);
+    const key = b.subarray(2, 6);
+    const text = String.fromCharCode(...Array.from(b.subarray(6), (x, i) => x ^ key[i % 4]));
+    expect(text).toBe('Hello, server!');
+  });
+
+  it('frames unencrypted SSH binary packets to a multiple of 8 with at least 4 bytes of padding', () => {
+    for (const s of lesson('ssh').steps) {
+      for (const l of s.packet.layers.filter((x) => x.kind === 'ssh' && /KEX|NEWKEYS/.test(x.name))) {
+        const len = new DataView(s.packet.bytes.buffer).getUint32(l.offset);
+        expect(len + 4).toBe(l.length);
+        expect((len + 4) % 8).toBe(0);
+        expect(s.packet.bytes[l.offset + 4]).toBeGreaterThanOrEqual(4);
+      }
+    }
+  });
+
+  it('encodes the FTP passive-mode port correctly', () => {
+    const data = lesson('ftp').steps.find((s) => s.packet.layers.some((l) => l.name === 'FTP data'))!.packet;
+    const tcp = layerOf(data, 'tcp');
+    expect(u16(data.bytes, tcp.offset)).toBe(195 * 256 + 80);
+  });
+});

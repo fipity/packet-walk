@@ -4,6 +4,7 @@ import { concat, randomBytes } from '../bytes';
 import { arp, ethernet, BROADCAST } from '../protocols/link';
 import { icmpEcho, icmpTimeExceeded, ipv4 } from '../protocols/inet';
 import { dnsQuery, dnsResponse, http, tlsChangeCipherSpec, tlsClientHello, tlsEncrypted, tlsServerHello } from '../protocols/app';
+import { MORE } from './more';
 import { NET, ON_LAPTOP, TcpConn, fromLaptop, toLaptop, udpFromLaptop, udpToLaptop, type Lesson, type Step } from './network';
 
 // ------------------------------------------------------------ Ethernet & ARP
@@ -334,6 +335,7 @@ export const LESSONS: Lesson[] = [
     intro: 'How does a laptop find the router sitting right next to it? Local networks deliver frames by MAC address, and ARP is how an IP address is turned into a MAC.',
     steps: [arpRequest, arpReply],
   },
+  MORE.dhcpLesson,
   {
     id: 'ip-icmp',
     title: 'IP & ICMP',
@@ -364,11 +366,15 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: 'tls',
-    title: 'TLS 1.3',
-    protocols: ['TLS 1.3'],
+    title: 'HTTPS & TLS 1.3',
+    protocols: ['HTTPS', 'TLS 1.3'],
     intro: 'TLS puts the "S" in HTTPS. In one round trip, the client and server agree on keys that nobody else knows, the server proves who it is, and everything after that is encrypted and tamper-proof.',
     steps: tlsSteps,
   },
+  MORE.websocketLesson,
+  MORE.quicLesson,
+  MORE.sshLesson,
+  MORE.ftpLesson,
   {
     id: 'page-load',
     title: 'Loading a web page',

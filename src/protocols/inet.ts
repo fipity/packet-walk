@@ -4,7 +4,9 @@ import { Header, layer, patch16, checksum, ip, hex16, truncate, type Packet } fr
 const PROTO = { ICMP: 1, TCP: 6, UDP: 17 } as const;
 export type IpProto = keyof typeof PROTO;
 
-const SERVICES: Record<number, string> = { 53: 'DNS', 80: 'HTTP', 443: 'HTTPS' };
+const SERVICES: Record<number, string> = {
+  21: 'FTP control', 22: 'SSH', 53: 'DNS', 67: 'DHCP server', 68: 'DHCP client', 80: 'HTTP', 443: 'HTTPS',
+};
 const portName = (p: number) => (SERVICES[p] ? `${p} (${SERVICES[p]})` : `${p}`);
 const portInfo = (p: number) =>
   SERVICES[p]
