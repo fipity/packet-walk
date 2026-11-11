@@ -233,6 +233,30 @@ a {
   border-color: var(--accent);
 }
 
+.icon-btn svg {
+  width: 16px;
+  height: 16px;
+  vertical-align: -3px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sound .spk {
+  fill: currentColor;
+}
+
+.sound[aria-pressed='true'] .off,
+.sound[aria-pressed='false'] .on {
+  display: none;
+}
+
+.sound[aria-pressed='false'] {
+  color: var(--muted);
+}
+
 /* ------------------------------------------------ buttons */
 
 .btn {

@@ -7,7 +7,7 @@ import { hex8, type LayerKind, type Packet } from './bytes';
 import type { Lesson } from './lessons/network';
 import { osiOf, renderModels } from './models';
 import { store } from './store';
-import { play } from './sound';
+import { isEnabled, play, setEnabled } from './sound';
 
 const REPO = 'https://github.com/fipity/packet-walk';
 
@@ -47,6 +47,7 @@ app.innerHTML = `
     <a class="toplink models-link" href="#/models"></a>
     <span class="spacer"></span>
     <label class="lang"><span class="sr"></span><select></select></label>
+    <button class="icon-btn sound" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="spk" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="on" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="off" d="M16 9.5l5 5M21 9.5l-5 5"/></svg></button>
     <button class="icon-btn theme" type="button"></button>
     <a class="gh" href="${REPO}" target="_blank" rel="noopener"></a>
   </header>
@@ -116,6 +117,18 @@ $('.theme').addEventListener('click', () => {
   play('theme');
 });
 
+function applySound(on: boolean): void {
+  const btn = $('.sound');
+  btn.setAttribute('aria-pressed', String(on));
+  btn.title = btn.ariaLabel = t('sound');
+}
+$('.sound').addEventListener('click', () => {
+  const on = !isEnabled();
+  setEnabled(on);
+  applySound(on);
+  if (on) play('toggle');
+});
+
 const langSel = $<HTMLSelectElement>('.lang select');
 for (const [code, l] of Object.entries(LOCALES)) langSel.append(new Option(l.name, code));
 $('.lang').hidden = Object.keys(LOCALES).length < 2;
@@ -154,6 +167,7 @@ function renderChrome(): void {
     $(`.${cls}`).textContent = t(key);
   }
   applyTheme(document.documentElement.dataset.theme ?? 'dark');
+  applySound(isEnabled());
 
   // Home
   $('.eyebrow').textContent = t('heroEyebrow');
