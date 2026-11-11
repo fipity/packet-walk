@@ -4,6 +4,9 @@ import type { NodeId, Lesson } from './lessons/network';
 import { NET } from './lessons/network';
 import { t, tr, type Key } from './i18n';
 import type { Layer, LayerKind, Packet } from './bytes';
+import { osiOf } from './models';
+import { isFailure } from './failure';
+import { play, type SoundName } from './sound';
 
 const SVG = 'http://www.w3.org/2000/svg';
 const W = 880;
@@ -92,6 +95,8 @@ export function shortName(l: Layer): string {
 export interface Chip {
   label: string;
   kind: LayerKind;
+  /** OSI layer of the chip, 1–7. */
+  osi: number;
 }
 
 /** The packet's layers from outermost to innermost, one chip per nesting depth. */
@@ -102,7 +107,7 @@ export function chain(p: Packet): Chip[] {
     const ls = byDepth.get(d)!;
     const names = [...new Set(ls.map(shortName))];
     const label = names.length === 1 ? names[0] + (ls.length > 1 ? ` ×${ls.length}` : '') : names.join('+');
-    return { label, kind: ls[0].kind };
+    return { label, kind: ls[0].kind, osi: osiOf(ls[0]) };
   });
 }
 
@@ -142,7 +147,8 @@ export class Diagram {
   private enabled: [NodeId, NodeId][] = [...LINKS];
   private anim = 0;
 
-  constructor(className = 'diagram') {
+  /** `sounds`: play stage sounds while animating (off for the looping hero on the home page). */
+  constructor(className = 'diagram', private sounds = false) {
     this.el = document.createElementNS(SVG, 'svg');
     this.el.setAttribute('viewBox', `0 0 ${W} ${H}`);
     this.el.setAttribute('class', className);
@@ -272,6 +278,8 @@ export class Diagram {
     const wrapList = [...ch].reverse().map((c) => c.label).join(' → ');
     const unwrapList = ch.map((c) => c.label).join(' → ');
     const summary = `${fromName} → ${toName} · ${packet.bytes.length} bytes`;
+    // Where along the path the packet passes each intermediate node, for the hop sound.
+    const hops = pts.slice(1, -1).map((_, i) => segs.slice(0, i + 1).reduce((a, b) => a + b, 0) / total);
 
     if (!animate) {
       place(1);
@@ -285,15 +293,32 @@ export class Diagram {
     const T = 700 + total * 2;
     const D = 150 * n + 250;
     const start = performance.now();
+    let shown = 0;
+    let departed = false;
+    let hop = 0;
+    // Chips are revealed innermost first and removed outermost first; sound the chip that changed.
+    const reveal = (k: number) => {
+      if (k > shown) this.sfx('wrap', ch[n - k].osi);
+      else if (k < shown) this.sfx('unwrap', ch[n - shown].osi);
+      shown = k;
+      this.visible(k);
+    };
     const tick = (now: number) => {
       const el = now - start;
       if (el < E) {
         place(0);
-        this.visible(Math.min(n, Math.ceil((el / E) * n)));
+        reveal(Math.min(n, Math.ceil((el / E) * n)));
         this.caption.textContent = `${fromName} wraps the data: ${wrapList}`;
       } else if (el < E + T) {
         const f = ease((el - E) / T);
+        if (!departed) this.sfx('depart');
+        departed = true;
+        while (hop < hops.length && f >= hops[hop]) {
+          this.sfx('hop');
+          hop++;
+        }
         place(f);
+        shown = n;
         this.visible(n);
         const atRouter = reframe && Math.abs(f - routerF) < 0.08;
         this.chips[0]?.classList.toggle('swap', atRouter);
@@ -303,12 +328,13 @@ export class Diagram {
       } else if (el < E + T + D) {
         place(1);
         this.chips[0]?.classList.remove('swap');
-        this.visible(Math.max(1, n - Math.floor(((el - E - T) / D) * n)));
+        reveal(Math.max(1, n - Math.floor(((el - E - T) / D) * n)));
         this.caption.textContent = `${toName} unwraps it: ${unwrapList}`;
       } else {
         place(1);
         this.visible(n);
         this.caption.textContent = summary;
+        this.sfx(isFailure(packet) ? 'error' : 'arrive');
         onDone?.();
         return;
       }
@@ -319,5 +345,9 @@ export class Diagram {
 
   stop(): void {
     cancelAnimationFrame(this.anim);
+  }
+
+  private sfx(name: SoundName, osi?: number): void {
+    if (this.sounds) play(name, osi);
   }
 }

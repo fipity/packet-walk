@@ -6,6 +6,8 @@ import { LOCALES, getLocale, setLocale, t, tr } from './i18n';
 import { hex8, type LayerKind, type Packet } from './bytes';
 import type { Lesson } from './lessons/network';
 import { osiOf, renderModels } from './models';
+import { store } from './store';
+import { isEnabled, play, setEnabled } from './sound';
 
 const REPO = 'https://github.com/fipity/packet-walk';
 
@@ -22,23 +24,6 @@ const h = (tag: string, cls?: string, text?: string) => {
   if (text !== undefined) e.textContent = text;
   return e;
 };
-const store = {
-  get(k: string): string | null {
-    try {
-      return localStorage.getItem(k);
-    } catch {
-      return null;
-    }
-  },
-  set(k: string, v: string): void {
-    try {
-      localStorage.setItem(k, v);
-    } catch {
-      /* storage unavailable */
-    }
-  },
-};
-
 const kindColor = (kind: LayerKind) => `var(--k-${kind})`;
 const lessonIndex = (id: string) => LESSONS.findIndex((l) => l.id === id);
 const groupOf = (id: string) => GROUPS.find((g) => g.ids.includes(id));
@@ -62,6 +47,7 @@ app.innerHTML = `
     <a class="toplink models-link" href="#/models"></a>
     <span class="spacer"></span>
     <label class="lang"><span class="sr"></span><select></select></label>
+    <button class="icon-btn sound" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="spk" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="on" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="off" d="M16 9.5l5 5M21 9.5l-5 5"/></svg></button>
     <button class="icon-btn theme" type="button"></button>
     <a class="gh" href="${REPO}" target="_blank" rel="noopener"></a>
   </header>
@@ -111,7 +97,7 @@ app.innerHTML = `
   <footer><span class="lic"></span> · <a href="${REPO}" target="_blank" rel="noopener" class="src"></a> · <span class="keys"></span></footer>
 `;
 
-const diagram = new Diagram('diagram');
+const diagram = new Diagram('diagram', true);
 $('.lesson-stage').append(diagram.el, diagram.caption);
 const hero = new Diagram('diagram hero-diagram');
 $('.hero-stage').append(hero.el, hero.caption);
@@ -128,6 +114,19 @@ $('.theme').addEventListener('click', () => {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   store.set('theme', next);
   applyTheme(next);
+  play('theme');
+});
+
+function applySound(on: boolean): void {
+  const btn = $('.sound');
+  btn.setAttribute('aria-pressed', String(on));
+  btn.title = btn.ariaLabel = t('sound');
+}
+$('.sound').addEventListener('click', () => {
+  const on = !isEnabled();
+  setEnabled(on);
+  applySound(on);
+  if (on) play('toggle');
 });
 
 const langSel = $<HTMLSelectElement>('.lang select');
@@ -136,8 +135,9 @@ $('.lang').hidden = Object.keys(LOCALES).length < 2;
 langSel.addEventListener('change', () => {
   setLocale(langSel.value);
   store.set('locale', langSel.value);
+  play('select');
   renderChrome();
-  route();
+  route(false);
 });
 
 // ---------------------------------------------------------------- static chrome
@@ -167,6 +167,7 @@ function renderChrome(): void {
     $(`.${cls}`).textContent = t(key);
   }
   applyTheme(document.documentElement.dataset.theme ?? 'dark');
+  applySound(isEnabled());
 
   // Home
   $('.eyebrow').textContent = t('heroEyebrow');
@@ -272,6 +273,7 @@ function renderPacketList(lesson: Lesson): void {
 $('.plist').addEventListener('click', (e) => {
   const row = (e.target as HTMLElement).closest<HTMLElement>('tr[data-i]');
   if (row) {
+    play('select');
     setPlayingQuiet(false);
     go(state.lesson, Number(row.dataset.i));
   }
@@ -280,6 +282,7 @@ $('.plist').addEventListener('keydown', (e) => {
   const row = (e.target as HTMLElement).closest<HTMLElement>('tr[data-i]');
   if (row && (e.key === 'Enter' || e.key === ' ')) {
     e.preventDefault();
+    play('select');
     setPlayingQuiet(false);
     go(state.lesson, Number(row.dataset.i));
   }
@@ -383,8 +386,16 @@ function selectField(fi: number, p: Packet, scroll: boolean): void {
 
 const inspector = $('.inspector');
 inspector.addEventListener('click', (e) => {
-  const el = (e.target as HTMLElement).closest<HTMLElement>('[data-f]');
-  if (el) selectField(Number(el.dataset.f), currentStep().packet, true);
+  const target = e.target as HTMLElement;
+  // The click runs before <details> toggles, so `open` is still the old state.
+  const summary = target.closest('.tree summary');
+  if (summary) play((summary.parentElement as HTMLDetailsElement).open ? 'collapse' : 'expand');
+  const el = target.closest<HTMLElement>('[data-f]');
+  if (!el) return;
+  const p = currentStep().packet;
+  const fi = Number(el.dataset.f);
+  if (p.fields[fi]) play('field', osiOf(p.layers[p.fields[fi].layer]));
+  selectField(fi, p, true);
 });
 inspector.addEventListener('mouseover', (e) => {
   const el = (e.target as HTMLElement).closest<HTMLElement>('[data-f]');
@@ -472,15 +483,21 @@ function go(lesson: number, step: number, animate = true): void {
 
 function next(): void {
   const l = currentLesson();
-  if (state.step < l.steps.length - 1) go(state.lesson, state.step + 1);
-  else if (state.lesson < LESSONS.length - 1) {
+  if (state.step < l.steps.length - 1) {
+    play('next');
+    go(state.lesson, state.step + 1);
+  } else if (state.lesson < LESSONS.length - 1) {
+    play('next');
     go(state.lesson + 1, 0);
     window.scrollTo({ top: 0 });
   }
 }
 
 function prev(): void {
-  if (state.step > 0) go(state.lesson, state.step - 1);
+  if (state.step > 0) {
+    play('prev');
+    go(state.lesson, state.step - 1);
+  }
 }
 
 function schedulePlay(): void {
@@ -499,6 +516,11 @@ function setPlaying(on: boolean): void {
   else renderLesson(false);
 }
 
+function togglePlay(): void {
+  play(state.playing ? 'pause' : 'play');
+  setPlaying(!state.playing);
+}
+
 function setPlayingQuiet(on: boolean): void {
   state.playing = on;
   clearTimeout(playTimer);
@@ -512,7 +534,7 @@ $('.next').addEventListener('click', () => {
   setPlayingQuiet(false);
   next();
 });
-$('.play').addEventListener('click', () => setPlaying(!state.playing));
+$('.play').addEventListener('click', togglePlay);
 
 document.addEventListener('keydown', (e) => {
   if (state.view !== 'lesson') return;
@@ -525,7 +547,7 @@ document.addEventListener('keydown', (e) => {
     prev();
   } else if (e.key === ' ' && !(e.target instanceof HTMLButtonElement) && !(e.target instanceof HTMLTableRowElement)) {
     e.preventDefault();
-    setPlaying(!state.playing);
+    togglePlay();
   }
 });
 
@@ -568,9 +590,11 @@ function showView(view: View): void {
   }
 }
 
-function route(): void {
+/** Show the view for the current URL. `sound`: play a navigation sound (off at boot and on language change). */
+function route(sound = true): void {
   const [, id, n] = location.hash.split('/');
   if (id === 'models') {
+    if (sound) play(state.view === 'models' ? 'select' : 'open');
     renderedLesson = -1;
     showView('models');
     renderModels($('.models'), Math.min(7, Math.max(1, Number(n) || 7)));
@@ -580,6 +604,7 @@ function route(): void {
   }
   const li = id ? lessonIndex(id) : -1;
   if (li < 0) {
+    if (sound && state.view !== 'home') play('home');
     renderedLesson = -1;
     showView('home');
     return;
@@ -587,12 +612,14 @@ function route(): void {
   const si = Math.min(Math.max(0, (Number(n) || 1) - 1), LESSONS[li].steps.length - 1);
   setPlayingQuiet(false);
   const switching = li !== state.lesson || state.view !== 'lesson';
+  if (sound && switching) play('open');
+  else if (sound && si !== state.step) play(si > state.step ? 'next' : 'prev');
   if (li !== state.lesson) renderedLesson = -1;
   go(li, si);
   if (switching) window.scrollTo({ top: 0 });
 }
 
-window.addEventListener('hashchange', route);
+window.addEventListener('hashchange', () => route());
 
 // ---------------------------------------------------------------- boot
 
@@ -602,4 +629,4 @@ langSel.value = getLocale();
 applyTheme(store.get('theme') ?? document.documentElement.dataset.theme ?? 'dark');
 renderChrome();
 state.view = 'lesson'; // force the first showView() to apply
-route();
+route(false);

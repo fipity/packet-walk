@@ -28,6 +28,7 @@ const en = {
   allLessons: 'All lessons',
   themeDark: 'Switch to dark theme',
   themeLight: 'Switch to light theme',
+  sound: 'Sound effects',
   heroEyebrow: 'Free and open source',
   heroTitle1: 'See how the internet works,',
   heroTitle2: 'one packet at a time.',
