@@ -65,6 +65,11 @@ its OSI layer number.
   (source, destination, protocol, length, info). Below it are a decoded layer tree and a
   hex dump that highlight each other as you click.
 - **A dark theme by default**, with a light theme one click away.
+- **Quiet sound effects**, synthesized in the browser with the Web Audio API (no audio
+  files). Stepping, selecting fields and bytes, and each layer being wrapped or unwrapped on
+  the stage get short, soft cues; each OSI layer has its own note, and a packet that shows
+  an error (such as a frame with a bad checksum) arrives with a low tone. Nothing plays until
+  you first click or press a key, and the speaker button in the header turns sound off.
 
 ![The "Loading a web page" lesson: a TLS ClientHello, drawn as ETH, IPv4, TCP and TLS layer chips, arrives at the server](docs/images/lesson-page-load.png)
 
