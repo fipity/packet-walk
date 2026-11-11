@@ -10,6 +10,8 @@ to see which field it belongs to and what it means.
 
 **Live site:** https://fipity.github.io/packet-walk/
 
+![The packet-walk home page: a hero headline, a small animated network diagram and the lesson list grouped by layer](docs/images/home.png)
+
 ## Lessons
 
 | # | Layer | Lesson | Protocols |
@@ -52,6 +54,8 @@ and Presentation, with links to the lessons where you can see it. It ends with o
 packet broken down by layer. In the packet inspector, every protocol layer is tagged with
 its OSI layer number.
 
+![The OSI and TCP/IP models page, comparing the 7-layer OSI model with the 5- and 4-layer TCP/IP models](docs/images/models.png)
+
 ## What you see
 
 - **An animated stage.** The packet is drawn as a row of layer chips (for example
@@ -61,6 +65,15 @@ its OSI layer number.
   (source, destination, protocol, length, info). Below it are a decoded layer tree and a
   hex dump that highlight each other as you click.
 - **A dark theme by default**, with a light theme one click away.
+
+![The "Loading a web page" lesson: a TLS ClientHello, drawn as ETH, IPv4, TCP and TLS layer chips, arrives at the server](docs/images/lesson-page-load.png)
+
+![The packet inspector: a packet list, the decoded layer tree with the DNS query name selected, and its bytes highlighted in the hex dump](docs/images/inspector.png)
+
+<p>
+  <img src="docs/images/lesson-light.png" width="68%" alt="The TCP lesson in the light theme">
+  <img src="docs/images/mobile.png" width="28%" alt="The UDP and DNS lesson on a phone-sized screen">
+</p>
 
 ## The packets are real
 
