@@ -6,6 +6,7 @@ import { LOCALES, getLocale, setLocale, t, tr } from './i18n';
 import { hex8, type LayerKind, type Packet } from './bytes';
 import type { Lesson } from './lessons/network';
 import { osiOf, renderModels } from './models';
+import { store } from './store';
 
 const REPO = 'https://github.com/fipity/packet-walk';
 
@@ -22,23 +23,6 @@ const h = (tag: string, cls?: string, text?: string) => {
   if (text !== undefined) e.textContent = text;
   return e;
 };
-const store = {
-  get(k: string): string | null {
-    try {
-      return localStorage.getItem(k);
-    } catch {
-      return null;
-    }
-  },
-  set(k: string, v: string): void {
-    try {
-      localStorage.setItem(k, v);
-    } catch {
-      /* storage unavailable */
-    }
-  },
-};
-
 const kindColor = (kind: LayerKind) => `var(--k-${kind})`;
 const lessonIndex = (id: string) => LESSONS.findIndex((l) => l.id === id);
 const groupOf = (id: string) => GROUPS.find((g) => g.ids.includes(id));
